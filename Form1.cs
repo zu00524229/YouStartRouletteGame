@@ -23,21 +23,51 @@ namespace YSPFrom
 
         private void StartSignalRServer()
         {
-            string url = "http://localhost:5000";
+            string url = "http://172.16.5.21:5000";     // 區網連線 IP
             _server = WebApp.Start<Startup>(url);
             this.Text = $"🎯 SignalR Server running at {url}";
         }
-        #region 基本
-        public void LogBase(string message) // 列印 基本Log(後台接收)
+        #region 玩家資訊
+        public void LogPlayerStatus(string message) // 登入/登出/連線
         {
-            AppendTextSafe(logTextBox_Base, message);
+            AppendTextSafe(logPlayerBox, message);
+        }
+
+        public void LogPlayerRoundBalance(string message) // 每局 / 登出餘額 都可以丟這裡
+        {
+            AppendTextSafe(logPlayerBalance, message);
+        }
+        public void LogPlayereffort(string message) // 列印 成就系統
+        {
+            AppendTextSafe(logPlayereffort, message);
         }
         #endregion
 
-        #region 下注資料
-        public void LogBet(string message)   // 列印下注資料(後台接收)
+        #region 金流 Log
+       
+        public void LogBalanceLeft(string msg) // 上半部左：抽獎前 & 扣注後
         {
-            AppendTextSafe(logTextBox_Bet, message);
+            AppendTextSafe(txtBalanceLeft, msg);
+        }
+
+        
+        public void LogBalanceRight(string msg) // 上半部右：派彩後
+        {
+            AppendTextSafe(txtBalanceRight, msg);
+        }
+
+        // 中間：局號、獎項、下注額、倍率、派彩
+        public void LogRoundSummary(string msg)
+        {
+            Console.WriteLine($"[DEBUG] LogRoundSummary 呼叫成功, msg={msg}");
+            AppendTextSafe(txtRoundSummary, msg);
+        }
+
+
+        // 下半部：額外訊息
+        public void LogOtherInfo(string msg)
+        {
+            AppendTextSafe(txtOtherInfo, msg);
         }
         #endregion
 
@@ -70,30 +100,13 @@ namespace YSPFrom
         }
         #endregion
 
-        #region 金流 Log
-       
-        public void LogBalanceLeft(string msg) // 上半部左：抽獎前 & 扣注後
+        #region 下注紀錄
+        public void LogBet(string message)   // 列印金流資料(後台計算)
         {
-            AppendTextSafe(txtBalanceLeft, msg);
+            AppendTextSafe(logTextBox_Bet, message);
         }
 
-        
-        public void LogBalanceRight(string msg) // 上半部右：派彩後
-        {
-            AppendTextSafe(txtBalanceRight, msg);
-        }
 
-        // 中間：局號、獎項、下注額、倍率、派彩
-        public void LogRoundSummary(string msg)
-        {
-            AppendTextSafe(txtRoundSummary, msg);
-        }
-
-        // 下半部：額外訊息
-        public void LogOtherInfo(string msg)
-        {
-            AppendTextSafe(txtOtherInfo, msg);
-        }
         #endregion
 
 

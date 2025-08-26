@@ -272,13 +272,19 @@ namespace YSPFrom
                         { "GOLDEN_TREASURE", 0 }
                     };
 
-            int balance = 5_000_000; // 初始餘額
+            int balance = 100_000_000; // 初始餘額
             long _currentRoundId = 0;
             int actualRounds = 0;    // 🆕 實際跑了幾局
 
             for (int i = 1; i <= times; i++)
             {
-                // === 生成隨機下注資料 ===
+                // === 生成「隨機 1~4 注」的下注資料 ===
+                int pickCount = rnd.Next(1, 5); // 1..4
+                var selectedAreas = allAreas
+                    .OrderBy(_ => rnd.Next())
+                    .Take(pickCount)
+                    .ToList();
+
                 var betAmounts = new Dictionary<string, int>();
                 foreach (var area in allAreas)
                 {
@@ -290,14 +296,7 @@ namespace YSPFrom
                     }
                 }
 
-                // 至少要有一個下注，避免 totalBet=0
-                if (betAmounts.Count == 0)
-                {
-                    var area = allAreas[rnd.Next(allAreas.Count)];
-                    int bet = betAmountsPool[rnd.Next(betAmountsPool.Length)];
-                    betAmounts[area] = bet;
-                }
-
+                // 建立 BetData
                 var betData = new BetData { betAmounts = betAmounts };
                 int betTotal = betData.totalBet;
 
@@ -336,12 +335,14 @@ namespace YSPFrom
                 // === 中獎結果 ===
                 LotteryLog(LotteryLogType.WinResult, result.rewardName, result.multiplier, result.payout);
 
+                Console.WriteLine("[DEBUG] 呼叫 RoundSummary 前");
                 // === RoundSummary（下半部左）===
                 LotteryLog(LotteryLogType.RoundSummary,
                     result.rewardName,
                     betTotal,
                     result.multiplier,
                     result.payout);
+                Console.WriteLine("[DEBUG] 呼叫 RoundSummary 後");
 
                 // === OtherInfo（下半部右）===
                 LotteryLog(LotteryLogType.OtherInfo, i, RTPManager.GetCurrentRTP(), totalBets, totalPayouts, balance, SuperJackpotPool.PoolBalance);

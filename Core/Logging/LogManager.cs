@@ -28,14 +28,25 @@ namespace YSPFrom.Core.Logging
                 File.AppendAllText(filePath, logLine + Environment.NewLine);
 
                 // UI 顯示（可選）
-                Program.MainForm?.LogBase($"[{category}] {message}");
+                //Program.MainForm?.LogBase($"[{category}] {message}");
             }
         }
-        #region 統一管理LotterySerivcr Log
+
+        // 局號 -> 玩家ID 對應
+        private static readonly Dictionary<long, string> _roundUserMap = new Dictionary<long, string>();
+
+        // 玩家成就累積：userId -> (大獎名稱 -> 次數)
+        private static readonly Dictionary<string, Dictionary<string, int>> _playerAchievements
+            = new Dictionary<string, Dictionary<string, int>>();
+
+
+        #region 統一管理型別
         public enum LotteryLogType
         {
             // ChatHub
+            PlayerLogoutBalance,
             ClientConnected,    // 前端連線
+            ClientDisconnected, // 前端斷線
             BetDataReceived,    // 收到下注資料
             BetAreaReceived,     // 收到下注區金額
 
@@ -70,17 +81,43 @@ namespace YSPFrom.Core.Logging
             // Outcome_JackpotLimiter
             JackpotLimiterBefore // 封頂前紀錄
         }
+        #endregion
+
+        #region Switch
 
         public static void LotteryLog(LotteryLogType type, params object[] args)
         {
             switch (type)
             {
                 #region ChatHub Log
+
+                case LotteryLogType.PlayerLogoutBalance:
+                    {
+                        string userId = (string)args[0];
+                        int balance = (int)args[1];
+
+                        string msg = $"❌ 玩家登出：[ {userId} ] 登出時餘額={balance}";
+                        Console.WriteLine(msg);
+                        Program.MainForm?.LogPlayerRoundBalance(msg); // 玩家分頁
+                        Program.MainForm?.LogPlayerStatus(msg);       // 狀態分頁
+                    }
+                    break;
+
                 case LotteryLogType.ClientConnected:
                     {
-                        string msg = "有前端連進來!";
+                        string userId = (string)args[0];
+                        string msg = $"✅ 玩家登入成功：{userId}";
                         Console.WriteLine(msg);
-                        Program.MainForm?.LogBase(msg);
+                        Program.MainForm?.LogPlayerStatus(msg);
+                    }
+                    break;
+
+                case LotteryLogType.ClientDisconnected:
+                    {
+                        string userId = (string)args[0];
+                        string msg = $"❌ 玩家已斷線：{userId}";
+                        Console.WriteLine(msg);
+                        Program.MainForm?.LogPlayerStatus(msg);
                     }
                     break;
 
@@ -99,63 +136,78 @@ namespace YSPFrom.Core.Logging
 
                 case LotteryLogType.BetAreaReceived:
                     {
+                        long roundId = _currentRoundId;
+                        string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
+
+
                         string areaName = (string)args[0];
                         int betAmount = (int)args[1];
-                        string msg = $"下注區 {areaName} 金額: {betAmount}";
-                        Console.WriteLine(msg);
+                        string msg = $"[下注][局號={roundId}][{userId}] 區域 {areaName} 金額={betAmount}"; Console.WriteLine(msg);
                         Program.MainForm?.LogBet(msg);
                     }
                     break;
                 #endregion
 
                 #region 管理 LotterySerivcr Log
-                case LotteryLogType.Jackpot:
+                case LotteryLogType.Jackpot:    // 命中大獎
                     {
+                        long roundId = _currentRoundId;
+                        string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
+
                         string rewardName = (string)args[0];
                         int finalMultiplier = (int)args[1];
                         int winAmount = (int)args[2];
                         double currentRTP = (float)args[3];
 
-                        //long roundId = RoundIdGenerator.NextId();
-                        long roundId = _currentRoundId;
+                        if (winAmount > 0)
+                        {
+                            // 🆕 累積玩家成就
+                            if (!_playerAchievements.ContainsKey(userId))
+                                _playerAchievements[userId] = new Dictionary<string, int>();
+                            if (!_playerAchievements[userId].ContainsKey(rewardName))
+                                _playerAchievements[userId][rewardName] = 0;
 
-                        string jackpotTimeLog = $"[大獎後重製RTP] 局號={roundId} 結束時間={DateTime.Now:yyyy-MM-dd HH:mm:ss}";
-                        Program.MainForm?.LogJackpot(jackpotTimeLog);
+                            _playerAchievements[userId][rewardName]++;
 
-                        string intervalLog = string.Format(
-                            "累計下注={0}, 累計派彩={1}, 轉盤次數={2}, RTP={3:0.0000}",
-                            RTPManager.totalBets,
-                            RTPManager.totalPayouts,
-                            RTPManager.spinCount,
-                            currentRTP
-                        );
-                        Program.MainForm?.LogRTP(intervalLog);
+                            int count = _playerAchievements[userId][rewardName];
 
-                        string bigResultLog = $"局號={roundId} | 獎項={rewardName}, 倍率={finalMultiplier}, 派彩金額={winAmount}, 當時RTP={currentRTP:0.0000}";
-                        Program.MainForm?.LogBigResult(bigResultLog);
+                            // 🖨️ 印出成就 Log
+                            string msg = $"[局號={roundId}][{userId}] 🏆 大獎 {rewardName} 倍率={finalMultiplier} → 派彩={winAmount} | 累積 {count} 次";
+                            Console.WriteLine(msg);
+                            Program.MainForm?.LogBigResult(msg);
+
+                            // 額外記錄 RTP 狀態
+                            string rtpMsg = $"大獎後RTP={currentRTP:0.0000} | 累計下注={RTPManager.totalBets}, 累計派彩={RTPManager.totalPayouts}, 轉盤次數={RTPManager.spinCount}";
+                            Program.MainForm?.LogRTP(rtpMsg);
+
+                            // 🆕 也可以印到成就分頁
+                            Program.MainForm?.LogPlayereffort($"🎖️ 成就：{userId} 第 {count} 次中 {rewardName}");
+                        }
                     }
-                    break;
+                        break;
 
                 case LotteryLogType.WinResult:
                     {
+                        long roundId = _currentRoundId;
+                        string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
+
                         string rewardName = (string)args[0];
                         int finalMultiplier = (int)args[1];
                         int winAmount = (int)args[2];
 
-                        string msg = $"中獎結果: {rewardName} x{finalMultiplier} → 派彩 {winAmount}";
-                        Console.WriteLine(msg);
-                        Program.MainForm?.LogResult(msg);
+                        if (winAmount > 0)
+                        {
+                            string msg = $"[局號={_currentRoundId}][{userId}] 🎯 中獎結果: {rewardName} x{finalMultiplier} → 派彩={winAmount}";
+                            Console.WriteLine(msg);
+                            Program.MainForm?.LogResult(msg);
+                        }
                     }
                     break;
 
                 case LotteryLogType.BetAmounts:
                     {
                         var betAmounts = (Dictionary<string, int>)args[0];
-                        foreach (var kv in betAmounts)
-                        {
-                            string msg = $"下注區 {kv.Key} 金額: {kv.Value}";
-                            Program.MainForm?.LogBet(msg);
-                        }
+   
                     }
                     break;
 
@@ -288,13 +340,20 @@ namespace YSPFrom.Core.Logging
                 #region ExtraPayManager Log
                 case LotteryLogType.ExtraPayTriggered:
                     {
-                        string rewardName = (string)args[0];
-                        int betAmount = (int)args[1];
-                        int extraMultiplier = (int)args[2];
+                        long roundId = _currentRoundId;
+                        string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-                        string msg = $"[ExtraPay觸發] 區域={rewardName} x{extraMultiplier}，下注={betAmount}";
-                        Console.WriteLine(msg);
-                        Program.MainForm?.LogResult(msg);
+                        string rewardName = (string)args[0];   // ✅ 區域名稱
+                        int betAmount = (int)args[1];          // ✅ 下注金額
+                        int extraMultiplier = (int)args[2];    // ✅ 加倍倍數
+
+                        if (betAmount > 0)
+                        {
+                            string msg = $"[局號={_currentRoundId}][{userId}] 🎉 觸發 ExtraPay：{rewardName} 區域，加倍 x{extraMultiplier}";
+                            Console.WriteLine(msg);
+                            Program.MainForm?.LogResult(msg);
+                            //Program.MainForm?.LogPlayereffort($"ExtraPay {rewardName} x{extraMultiplier}");
+                        }
                     }
                     break;
                 #endregion
@@ -307,71 +366,83 @@ namespace YSPFrom.Core.Logging
                         // 每一局開始時，產生一個新的局號
                         long roundId = RoundIdGenerator.NextId();
                         _currentRoundId = roundId;
-                        int balanceBefore = Convert.ToInt32(args[0]);
-                        int totalBet = Convert.ToInt32(args[1]);
 
-                        string msg = $"[金流][局號={roundId}] 抽獎前餘額={balanceBefore}, 本輪下注={totalBet}";
-    
+                        string userId = (string)args[0];
+
+                        // ✅ 綁定局號 -> 玩家ID
+                        _roundUserMap[roundId] = userId;
+
+                        int balanceBefore = Convert.ToInt32(args[1]);
+                        int totalBet = Convert.ToInt32(args[2]);
+
+                        string msg = $"[局號={roundId}][{userId}] 餘額流動：{balanceBefore} → (下注 {totalBet})";
                         Console.WriteLine(msg);
-                        Program.MainForm?.LogBalanceLeft(msg);
+                        Program.MainForm?.LogBalanceLeft(msg);  // ① 玩家餘額變化
+                        Program.MainForm?.LogPlayerRoundBalance(msg); // 玩家分頁：局號/餘額
                     }
                     break;
                 case LotteryLogType.BalanceAfterBet:
                     {
                         Console.WriteLine($"[DEBUG] BalanceBeforeBet args.Length={args.Length}");
 
-                        // 後續事件沿用當前局號
                         long roundId = _currentRoundId;
-                        //long roundId = args.Length >= 2 ? GetLong(args, 0, 0) : 0;
+                        string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
+
                         int balanceAfterBet = Convert.ToInt32(args[0]);
 
-                        string msg = $"[金流][局號={roundId}] 扣注後餘額={balanceAfterBet}";
-                        Console.WriteLine(msg);
-                        Program.MainForm?.LogBalanceLeft(msg); // 上半部左
+                        string msg = $"[局號={roundId}][{userId}] 扣注後餘額={balanceAfterBet}";
+                        Program.MainForm?.LogBalanceLeft(msg);  // ① 玩家餘額變化
+                        Program.MainForm?.LogPlayerRoundBalance(msg); // 玩家分頁
 
-                }
+                    }
                 break;
 
                 case LotteryLogType.BalanceAfterPayout:
                     {
-                        //Console.WriteLine($"[DEBUG] BalanceAfterPayout args.Length={args.Length}");
                         long roundId = _currentRoundId;
-                        //long roundId = GetLong(args, 0, 0);
+                        string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
+
                         int payout = Convert.ToInt32(args[0]);
                         int balanceAfterPayout = Convert.ToInt32(args[1]);
-                        string msg = $"[金流][局號={roundId}] 派彩={payout}, 派彩後餘額={balanceAfterPayout}";
+
+                        string msg = $"[局號={roundId}][{userId}] 派彩={payout}, 結算後餘額={balanceAfterPayout}";
                         Console.WriteLine(msg);
-                        Program.MainForm?.LogBalanceRight(msg); // 上半部右
-                }
+                        Program.MainForm?.LogBalanceRight(msg);  // ① 玩家餘額變化(派彩後)
+                        Program.MainForm?.LogPlayerRoundBalance(msg); // 玩家分頁
+
+                    }
                     break;
 
                 case LotteryLogType.RoundSummary:
                     {
                         long roundId = _currentRoundId;
-                        string rewardName = (string)args[0];
-                        int betAmount = (int)args[1];
-                        int multiplier = (int)args[2];
-                        int payout = (int)args[3];
+                        string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-                        string msg = $"局號={roundId} | 獎項={rewardName}, 下注={betAmount}, 倍率={multiplier}, 派彩={payout}";
+                        string rewardName = Convert.ToString(args[0]);
+                        int betAmount = Convert.ToInt32(args[1]);
+                        int multiplier = Convert.ToInt32(args[2]);
+                        int netChange = Convert.ToInt32(args[3]);
+
+                        string msg = $"[局號={roundId}][{userId}] 下注={betAmount}, 獎項={rewardName}, 倍率={multiplier}, 淨變化={(netChange >= 0 ? "+" : "")}{netChange}";
                         Console.WriteLine(msg);
-                        Program.MainForm?.LogRoundSummary(msg);  // 下半部左
+                        Program.MainForm?.LogRoundSummary(msg);
                     }
                     break;
 
                 case LotteryLogType.OtherInfo:
                     {
                         long roundId = _currentRoundId;
-                        double rtp = Convert.ToDouble(args[1]);
-                        int bets = (int)args[2];
-                        int payouts = (int)args[3];
-                        int bal = (int)args[4];
-                        double jackpot = (double)args[5];
+                        string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-                        string msg = $"局號={roundId}, 當前RTP={rtp:0.0000}, " +
-                                     $"總下注={bets}, 總派彩={payouts}, 餘額={bal}, 獎池={jackpot:0}";
-                        Console.WriteLine($"[Other] {msg}");
-                        Program.MainForm?.LogOtherInfo(msg);   // 下半部右
+                        double rtp = Convert.ToDouble(args[1]);
+                        int bets = Convert.ToInt32(args[2]);
+                        int payouts = Convert.ToInt32(args[3]);
+                        int bal = Convert.ToInt32(args[4]);
+                        double jackpot = Convert.ToDouble(args[5]);
+
+                        string msg = $"[System][局號={roundId}][{userId}] RTP={rtp:0.0000}, 總下注={bets}, 總派彩={payouts}, 餘額={bal}, 超大獎池={jackpot:0}";
+                        Console.WriteLine(msg);
+                        Program.MainForm?.LogOtherInfo(msg);   // ④ 系統/除錯
                     }
                     break;
                     #endregion
@@ -400,24 +471,5 @@ namespace YSPFrom.Core.Logging
             try { return Convert.ToInt64(a[idx]); } catch { }
             long v; return long.TryParse(a[idx].ToString(), out v) ? v : def;
         }
-
-
-
-
-
-
-
-
-
-        //public static void BetLog(string msg) => Program.MainForm?.LogBet(msg);
-        //public static void ResultLog(string msg) => Program.MainForm?.LogResult(msg);           // 列印中獎結果(左分頁)
-        //public static void RTPHistoryLog(string msg) => Program.MainForm?.LogRTPhistory(msg);   // 列印歷史紀錄與總 RTP 資訊(右分頁)
-        //public static void BaseLog(string msg) => Program.MainForm?.LogBase(msg);
-
-
-        //public static void LogBigResult(string message) => Log("BigResult", message);
-        //public static void LogRTP(string message) => Log("RTP", message);
-        //public static void LogError(string message) => Log("Error", message);
-        //public static void LogDebug(string message) => Log("Debug", message);
     }
 }

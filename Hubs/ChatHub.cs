@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using YSPFrom.Core.Logging;
+using YSPFrom.Core.RTP;
+using YSPFrom.Core.SuperJackpot;
 using YSPFrom.Models;
 using static YSPFrom.Core.Logging.LogManager;
 
@@ -20,11 +22,34 @@ namespace YSPFrom
 
         public override Task OnConnected()
         {
-            //Console.WriteLine("有前端連進來!");
             Console.WriteLine("Hub 名稱: " + this.Context.ConnectionId);
             Console.WriteLine("Hub 類型: " + this.GetType().Name);
-            LogManager.LotteryLog(LogManager.LotteryLogType.ClientConnected);       // 統一管理
+
+            // 這裡只記錄 ConnId，不要傳 userId
+            string msg = $"⚡ 有新連線進來 ConnId={Context.ConnectionId}";
+            Console.WriteLine(msg);
+            Program.MainForm?.LogPlayerStatus(msg);
+
             return base.OnConnected();
+        }
+
+        // ✅ 當玩家斷線，自動清除 ConnectionId
+        public override Task OnDisconnected(bool stopCalled)
+        {
+            var connId = Context.ConnectionId;
+
+            // 找出斷線的玩家
+            var player = playersDb.Values.FirstOrDefault(p => p.ConnectionId == connId);
+            if (player != null)
+            {
+                Console.WriteLine($"玩家 {player.UserId} 已斷線，清除連線ID (ConnId={connId})");
+                LogManager.LotteryLog(LogManager.LotteryLogType.ClientDisconnected, player.UserId);
+                LogManager.LotteryLog(LogManager.LotteryLogType.PlayerLogoutBalance, player.UserId, player.Balance);
+
+                player.ConnectionId = null; // 清掉斷線
+            }
+
+            return base.OnDisconnected(stopCalled);
         }
 
         #region // 從 data 取得下注資料(舊StartLottery)
@@ -87,9 +112,24 @@ namespace YSPFrom
             }
 
             var player = playersDb[username];
-            player.ConnectionId = Context.ConnectionId; // 綁定連線ID
+            
 
-            Console.WriteLine($" 玩家 {username} 登入成功，餘額：{player.Balance} (ConnId: {player.ConnectionId})");
+            // 🔑 檢查是否已經有人登入
+            if (!string.IsNullOrEmpty(player.ConnectionId))
+            {
+                // 如果你要拒絕新登入：
+                return new { success = false, message = "此帳號已在其他地方登入" };
+
+                // 如果你要踢掉舊連線（只允許新連線）：
+                // Clients.Client(player.ConnectionId).SendAsync("ForceLogout", "帳號已在別處登入");
+                // Console.WriteLine($"玩家 {username} 被新連線擠下線 (舊ConnId={player.ConnectionId}, 新ConnId={Context.ConnectionId})");
+            }
+
+            player.ConnectionId = Context.ConnectionId; // 綁定連線ID
+            Console.WriteLine($"玩家 {username} 登入成功，餘額：{player.Balance} (ConnId: {player.ConnectionId})");
+
+            // 真正記錄玩家登入
+            LogManager.LotteryLog(LogManager.LotteryLogType.ClientConnected, player.UserId);
 
             return new
             {
@@ -99,6 +139,8 @@ namespace YSPFrom
                 balance = player.Balance
             };
         }
+
+
 
         // ✅ 下注流程：根據 ConnectionId 找玩家
         public void StartLottery(BetData data)
@@ -131,7 +173,7 @@ namespace YSPFrom
 
             // 扣除下注金額
             var before = player.Balance;        // 抽獎前餘額
-            LotteryLog(LotteryLogType.BalanceBeforeBet, player.Balance, data.totalBet);
+            LotteryLog(LotteryLogType.BalanceBeforeBet, player.UserId, player.Balance, data.totalBet);
 
             player.Balance -= data.totalBet;    // 扣住
             var afterDebit = player.Balance;    // 扣住後餘額( 還未派彩 )
@@ -163,12 +205,27 @@ namespace YSPFrom
                 // netChange 會自動算，不用另外賦值
             };
 
+            // === RoundSummary（每局必記）===
+            LotteryLog(LotteryLogType.RoundSummary,
+                result.rewardName,
+                response.totalBet,
+                result.multiplier,
+                response.netChange);
 
             // 事件：只丟轉盤結果，給前端動畫用
             Clients.Caller.broadcastLotteryResult(result);
 
             // 回傳給當事人
             Clients.Caller.lotteryResult(response);
+
+            // === 系統資訊 ===
+            LotteryLog(LotteryLogType.OtherInfo,
+                "OK",  // args[0] 目前沒用，可以放 "OK"
+                RTPManager.GetCurrentRTP(),
+                RTPManager.totalBets,
+                RTPManager.totalPayouts,
+                response.balanceAfter,      // 當前玩家餘額 or 機台餘額，看你要印哪個
+                SuperJackpotPool.PoolBalance);
         }
         #endregion
 
