@@ -83,6 +83,7 @@
   <ItemGroup>
     <Compile Include="Core\Identifiers\RoundIdGenerator.cs" />
     <Compile Include="Core\Logging\LogManager.cs" />
+    <Compile Include="Core\Logging\LogSearchManager.cs" />
     <Compile Include="Core\LottrtySimulator.cs" />
     <Compile Include="Core\RTP\BoostRegulator.cs" />
     <Compile Include="Core\RTP\WheelManager.cs" />
@@ -111,6 +112,7 @@
     <Compile Include="Engine\RewardSelector.cs" />
     <Compile Include="Engine\Picker\SimplelindexPicker.cs" />
     <Compile Include="Core\LotteryService.cs" />
+    <Compile Include="Models\RoundContext.cs" />
     <Compile Include="Players\PlayerManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

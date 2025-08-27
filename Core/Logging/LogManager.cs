@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using YourNamespace.Core.Utils;
 using YSPFrom;
 using YSPFrom.Core.RTP;
+using YSPFrom.Core.SuperJackpot;
+using YSPFrom.Models;
 
 namespace YSPFrom.Core.Logging
 {
@@ -57,12 +60,12 @@ namespace YSPFrom.Core.Logging
             RoundSummary,       // 「局號、獎項、下注額、倍率、派彩」
             OtherInfo,       // 額外補充資訊
 
-
             // LotterySerivcr
             Jackpot,            // 大獎後重製RTP + 詳細紀錄
             WinResult,          // 中獎結果
             BetAmounts,         // 下注區金額
             JackpotContribution, // 獎池提撥
+            RoundWinSummary,    // 局號、獎項、下注額、倍率、派彩
             RTPStatus,          // 顯示 RTP 狀態
             RTPHistoryStats,     // 當前歷史統計
 
@@ -120,17 +123,20 @@ namespace YSPFrom.Core.Logging
                         Program.MainForm?.LogPlayerStatus(msg);
                     }
                     break;
+                #endregion
 
+                #region 下注資料
                 case LotteryLogType.BetDataReceived:
                     {
-                        int totalBet = (int)args[0];
-                        bool isAutoMode = (bool)args[1];
-                        Console.WriteLine(" 收到下注資料：");
-                        Console.WriteLine($"自動模式: {isAutoMode}");
+                        long roundId = _currentRoundId;
+                        string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-                        Program.MainForm?.LogBet("收到下注資料：");
-                        Program.MainForm?.LogBet($"總下注: {totalBet}");
-                        Program.MainForm?.LogBet($"自動模式: {isAutoMode}");
+                        int totalBet = Convert.ToInt32(args[0]);
+                        bool isAutoMode = Convert.ToBoolean(args[1]);
+
+                        string msg = $"[{userId}][局號={roundId}] 總下注={totalBet}, Auto={isAutoMode}";
+                        Console.WriteLine(msg);
+                        Program.MainForm?.LogBet(msg);
                     }
                     break;
 
@@ -139,16 +145,26 @@ namespace YSPFrom.Core.Logging
                         long roundId = _currentRoundId;
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-
-                        string areaName = (string)args[0];
-                        int betAmount = (int)args[1];
-                        string msg = $"[下注][局號={roundId}][{userId}] 區域 {areaName} 金額={betAmount}"; Console.WriteLine(msg);
-                        Program.MainForm?.LogBet(msg);
+                        // args[0] = Dictionary<string,int> (betAmounts)
+                        var betDict = args[0] as Dictionary<string, int>;
+                        if (betDict != null && betDict.Count > 0)
+                        {
+                            // 過濾掉金額 = 0 下注區
+                            var nonZeroBets = betDict.Where(kv => kv.Value > 0);
+                            if (nonZeroBets.Any())
+                            {
+                                string dist = string.Join(", ", betDict.Select(kv => $"{kv.Key}={kv.Value}"));
+                                string msg = $"[{userId}] [局號={roundId}] 下注分布: {dist}";
+                                Console.WriteLine(msg);
+                                Program.MainForm?.LogBet(msg);
+                            }
+                        }
                     }
                     break;
                 #endregion
 
-                #region 管理 LotterySerivcr Log
+                #region 管理 LotterySerivcr Log 
+                #region (RTP)
                 case LotteryLogType.Jackpot:    // 命中大獎
                     {
                         long roundId = _currentRoundId;
@@ -171,20 +187,47 @@ namespace YSPFrom.Core.Logging
 
                             int count = _playerAchievements[userId][rewardName];
 
-                            // 🖨️ 印出成就 Log
-                            string msg = $"[局號={roundId}][{userId}] 🏆 大獎 {rewardName} 倍率={finalMultiplier} → 派彩={winAmount} | 累積 {count} 次";
-                            Console.WriteLine(msg);
-                            Program.MainForm?.LogBigResult(msg);
+                            // ✅ 機台 RTP 狀態（扣掉大獎池，統一顯示格式）
+                            double netProfit = Convert.ToDouble(RTPManager.totalBets) - Convert.ToDouble(RTPManager.totalPayouts) - SuperJackpotPool.PoolBalance;
+                            string rtpMsg = $"【大獎後RTP】{currentRTP:0.0000} | 總下注={RTPManager.totalBets}, 總派彩={RTPManager.totalPayouts}, 淨利={netProfit}, 大獎池={SuperJackpotPool.PoolBalance}, 局數={RTPManager.spinCount}";
+                            Console.WriteLine(rtpMsg);
+                            Program.MainForm?.LogRTPhistory(rtpMsg);
 
-                            // 額外記錄 RTP 狀態
-                            string rtpMsg = $"大獎後RTP={currentRTP:0.0000} | 累計下注={RTPManager.totalBets}, 累計派彩={RTPManager.totalPayouts}, 轉盤次數={RTPManager.spinCount}";
-                            Program.MainForm?.LogRTP(rtpMsg);
 
                             // 🆕 也可以印到成就分頁
                             Program.MainForm?.LogPlayereffort($"🎖️ 成就：{userId} 第 {count} 次中 {rewardName}");
                         }
                     }
                         break;
+                case LotteryLogType.RTPStatus:
+                    {
+                        string rtpMsg = RTPManager.GetRTPStatusMessage();
+                        Console.WriteLine(rtpMsg);
+                        Program.MainForm?.LogRTP(rtpMsg);
+                    }
+                    break;
+                case LotteryLogType.RTPHistoryStats:
+                    {
+                        RTPManager.LogLifetimeStats();
+                    }
+                    break;
+                case LotteryLogType.RoundWinSummary: 
+                    {
+                        var ctx = args[0] as RoundContext;
+                        if (ctx == null) break;
+
+                        string msg =
+                            $"[玩家={ctx.UserId}][局號={ctx.RoundId}]" +
+                            $"下注={ctx.BetAmount} | 提撥={ctx.Contribution} | 派彩={ctx.Payout} | 淨利={(ctx.NetChange >= 0 ? "+" : "")}{ctx.NetChange}" +
+                            $"中獎: {ctx.RewardName} 倍率={ctx.Multiplier} → 派彩={ctx.Payout}" +
+                            $"獎池餘額={ctx.PoolBalance:0} | 當前RTP={ctx.CurrentRTP:P2}";
+
+                        Console.WriteLine(msg);
+                        Program.MainForm?.LogSummary(msg);
+                    }
+                    break;
+
+                #endregion
 
                 case LotteryLogType.WinResult:
                     {
@@ -197,9 +240,9 @@ namespace YSPFrom.Core.Logging
 
                         if (winAmount > 0)
                         {
-                            string msg = $"[局號={_currentRoundId}][{userId}] 🎯 中獎結果: {rewardName} x{finalMultiplier} → 派彩={winAmount}";
+                            string msg = $"[{userId}][局號={roundId}] 🎯 {rewardName} x{finalMultiplier} → 派彩={winAmount}";
                             Console.WriteLine(msg);
-                            Program.MainForm?.LogResult(msg);
+                            Program.MainForm?.LogWin(msg);
                         }
                     }
                     break;
@@ -207,7 +250,6 @@ namespace YSPFrom.Core.Logging
                 case LotteryLogType.BetAmounts:
                     {
                         var betAmounts = (Dictionary<string, int>)args[0];
-   
                     }
                     break;
 
@@ -216,37 +258,26 @@ namespace YSPFrom.Core.Logging
                         double contribution = (double)args[0];
                         double poolBalance = (double)args[1];
 
-                        string msg = $"[獎池] 提撥 {contribution} 到超級大獎池，剩餘 {poolBalance:0}";
-                        Program.MainForm?.LogJackpot(msg);
+                        string msg = $"提撥 {contribution} → 超級大獎池餘額={poolBalance:0}";
+                        Console.WriteLine(msg);
+                        Program.MainForm?.LogJackpotPool(msg);
                     }
                     break;
-
-                case LotteryLogType.RTPStatus:
-                    {
-                        string rtpMsg = RTPManager.GetRTPStatusMessage();
-                        Console.WriteLine(rtpMsg);
-                        Program.MainForm?.LogRTP(rtpMsg);
-                    }
-                    break;
-
-                case LotteryLogType.RTPHistoryStats:
-                    {
-                        RTPManager.LogLifetimeStats();
-                    }
-                    break;
+                
                 #endregion
 
                 #region Outcome Log
                 case LotteryLogType.NetProfitCheck:
                     {
                         double net = RTPManager.GetNetProfit();
-                        string msg = $"[安全機制] 當前淨利 = {net:0}";
+                        string msg = $"【安全機制】當前淨利={net:0}, 大獎池={SuperJackpotPool.PoolBalance:0}";
                         Console.WriteLine(msg);
-                        Program.MainForm?.LogRTP(msg);  // 即時狀態 → LogRTP
+                        Program.MainForm?.LogRTPhistory(msg);  // 歷史紀錄（右框）
                     }
                     break;
 
-                case LotteryLogType.PoolBiasAdjustment:
+                // (先不用)
+                case LotteryLogType.PoolBiasAdjustment: 
                     {
                         float alpha = (float)args[0];
                         float boostLow = (float)args[1];
@@ -262,8 +293,11 @@ namespace YSPFrom.Core.Logging
                     {
                         double currentRtp = Convert.ToDouble(args[0]);
                         double targetRtp = Convert.ToDouble(args[1]);
-                        Console.WriteLine("[Debug] ExtraPay 檢查開始");
-                        Console.WriteLine($"當前 RTP: {currentRtp}, 目標 RTP: {targetRtp}");
+                        double diff = targetRtp - currentRtp;
+
+                        string msg = $"【控獎-ExtraPay】當前={currentRtp:0.0000} | 目標={targetRtp:0.0000} | 差距={diff:+0.0000;-0.0000;0.0000}";
+                        Console.WriteLine(msg);
+                        Program.MainForm?.LogRTP(msg);
                     }
                     break;
 
@@ -286,9 +320,10 @@ namespace YSPFrom.Core.Logging
                         string rewardName = (string)args[0];
                         double needPool = (double)args[1];
                         double poolBalance = (double)args[2];
-                        string msg = $"[獎池機制] 獎池不足 → 移除 {rewardName} | 需求={needPool:0}, 目前={poolBalance:0}";
+
+                        string msg = $"❌ 獎池不足 → 移除 {rewardName} | 需求={needPool:0}, 現有={poolBalance:0}";
                         Console.WriteLine(msg);
-                        Program.MainForm?.LogJackpot(msg);
+                        Program.MainForm?.LogJackpotPool(msg);
                     }
                     break;
 
@@ -297,12 +332,10 @@ namespace YSPFrom.Core.Logging
                         string rewardName = (string)args[0];
                         double net = (double)args[1];
                         double probability = (double)args[2];
-                        string msg = $"[門檻] {rewardName} 達標 → 目前淨利={net:0} | 中獎機率={probability:P4}";
+
+                        string msg = $"[門檻] ✅ {rewardName} 達標 → 淨利={net:0} | 中獎機率={probability:P4}";
                         Console.WriteLine(msg);
-                        Program.MainForm?.LogRTP(msg);
-                        // ★ 超大獎，額外記錄到大獎分頁
-                        if (rewardName == "GOLDEN_TREASURE")
-                            Program.MainForm?.LogJackpot(msg);
+                        Program.MainForm?.LogJackpotPool(msg);
                     }
                     break;
 
@@ -311,14 +344,10 @@ namespace YSPFrom.Core.Logging
                         string rewardName = (string)args[0];
                         double need = (double)args[1];
                         double net = (double)args[2];
-                        // ❌ 安全機制觸發 → 歷史分頁
-                        string msg = $"[安全機制] 淨利不足 → 移除 {rewardName} | 需求={need:0}, 淨利={net:0}";
-                        Console.WriteLine(msg);
-                        Program.MainForm?.LogRTPhistory(msg);
 
-                        // ★ 超大獎，額外記錄到大獎分頁
-                        if (rewardName == "GOLDEN_TREASURE")
-                            Program.MainForm?.LogJackpot(msg);
+                        string msg = $"[安全機制] ❌ 淨利不足 → 移除 {rewardName} | 需求={need:0}, 淨利={net:0}";
+                        Console.WriteLine(msg);
+                        Program.MainForm?.LogJackpotPool(msg);
                     }
                     break;
                 #endregion
@@ -330,7 +359,7 @@ namespace YSPFrom.Core.Logging
                         double nonJackSum = Convert.ToDouble(args[1]);
                         double jackpotCap = Convert.ToDouble(args[2]);
 
-                        string msg = $"[封頂前] 大獎權重總和={jackSum}, 非大獎權重總和={nonJackSum}, 大獎上限={jackpotCap}";
+                        string msg = $"【控獎-封頂】大獎權重={jackSum:0.##}, 非大獎={nonJackSum:0.##}, 上限={jackpotCap:0.##}";
                         Console.WriteLine(msg);
                         Program.MainForm?.LogRTP(msg);
                     }
@@ -349,10 +378,9 @@ namespace YSPFrom.Core.Logging
 
                         if (betAmount > 0)
                         {
-                            string msg = $"[局號={_currentRoundId}][{userId}] 🎉 觸發 ExtraPay：{rewardName} 區域，加倍 x{extraMultiplier}";
+                            string msg = $"[{userId}][局號={roundId}] 🎉 ExtraPay 觸發：{rewardName} 區域，加倍 x{extraMultiplier}";
                             Console.WriteLine(msg);
-                            Program.MainForm?.LogResult(msg);
-                            //Program.MainForm?.LogPlayereffort($"ExtraPay {rewardName} x{extraMultiplier}");
+                            Program.MainForm?.LogWin(msg);
                         }
                     }
                     break;
@@ -361,7 +389,7 @@ namespace YSPFrom.Core.Logging
                 #region ChatHub.StartLottery 金流事件
                 case LotteryLogType.BalanceBeforeBet:
                     {
-                        Console.WriteLine($"[DEBUG] BalanceBeforeBet args.Length={args.Length}");
+                        //Console.WriteLine($"[DEBUG] BalanceBeforeBet args.Length={args.Length}");
 
                         // 每一局開始時，產生一個新的局號
                         long roundId = RoundIdGenerator.NextId();
@@ -375,7 +403,7 @@ namespace YSPFrom.Core.Logging
                         int balanceBefore = Convert.ToInt32(args[1]);
                         int totalBet = Convert.ToInt32(args[2]);
 
-                        string msg = $"[局號={roundId}][{userId}] 餘額流動：{balanceBefore} → (下注 {totalBet})";
+                        string msg = $"[{userId}][局號={roundId}] 餘額流動：{balanceBefore} → (下注 {totalBet})";
                         Console.WriteLine(msg);
                         Program.MainForm?.LogBalanceLeft(msg);  // ① 玩家餘額變化
                         Program.MainForm?.LogPlayerRoundBalance(msg); // 玩家分頁：局號/餘額
@@ -383,14 +411,14 @@ namespace YSPFrom.Core.Logging
                     break;
                 case LotteryLogType.BalanceAfterBet:
                     {
-                        Console.WriteLine($"[DEBUG] BalanceBeforeBet args.Length={args.Length}");
+                        //Console.WriteLine($"[DEBUG] BalanceBeforeBet args.Length={args.Length}");
 
                         long roundId = _currentRoundId;
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
                         int balanceAfterBet = Convert.ToInt32(args[0]);
 
-                        string msg = $"[局號={roundId}][{userId}] 扣注後餘額={balanceAfterBet}";
+                        string msg = $"[{userId}][局號={roundId}] 扣注後餘額={balanceAfterBet}";
                         Program.MainForm?.LogBalanceLeft(msg);  // ① 玩家餘額變化
                         Program.MainForm?.LogPlayerRoundBalance(msg); // 玩家分頁
 
@@ -405,7 +433,7 @@ namespace YSPFrom.Core.Logging
                         int payout = Convert.ToInt32(args[0]);
                         int balanceAfterPayout = Convert.ToInt32(args[1]);
 
-                        string msg = $"[局號={roundId}][{userId}] 派彩={payout}, 結算後餘額={balanceAfterPayout}";
+                        string msg = $"[{userId}][局號={roundId}] 派彩={payout}, 結算後餘額={balanceAfterPayout}";
                         Console.WriteLine(msg);
                         Program.MainForm?.LogBalanceRight(msg);  // ① 玩家餘額變化(派彩後)
                         Program.MainForm?.LogPlayerRoundBalance(msg); // 玩家分頁
@@ -423,9 +451,11 @@ namespace YSPFrom.Core.Logging
                         int multiplier = Convert.ToInt32(args[2]);
                         int netChange = Convert.ToInt32(args[3]);
 
-                        string msg = $"[局號={roundId}][{userId}] 下注={betAmount}, 獎項={rewardName}, 倍率={multiplier}, 淨變化={(netChange >= 0 ? "+" : "")}{netChange}";
+                        string msg = $"[{userId}][局號={roundId}] 下注={betAmount}, 獎項={rewardName}, 倍率={multiplier}, 淨變化={(netChange >= 0 ? "+" : "")}{netChange}";
                         Console.WriteLine(msg);
                         Program.MainForm?.LogRoundSummary(msg);
+
+
                     }
                     break;
 
@@ -440,7 +470,7 @@ namespace YSPFrom.Core.Logging
                         int bal = Convert.ToInt32(args[4]);
                         double jackpot = Convert.ToDouble(args[5]);
 
-                        string msg = $"[System][局號={roundId}][{userId}] RTP={rtp:0.0000}, 總下注={bets}, 總派彩={payouts}, 餘額={bal}, 超大獎池={jackpot:0}";
+                        string msg = $"[{userId}][局號={roundId}] RTP={rtp:0.0000}, 總下注={bets}, 總派彩={payouts}, 餘額={bal}, 超大獎池累積金額={jackpot:0}";
                         Console.WriteLine(msg);
                         Program.MainForm?.LogOtherInfo(msg);   // ④ 系統/除錯
                     }

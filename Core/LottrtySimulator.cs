@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using YourNamespace.Core.Utils;
+using YSPFrom.Core.Logging;
 using YSPFrom.Core.RTP;
 using YSPFrom.Core.SuperJackpot;
 using YSPFrom.Engine.Outcome;
@@ -25,7 +26,7 @@ namespace YSPFrom
 
             for (int i = 0; i < simulateCount; i++)
             {
-                var result = LotteryService.CalculateLotteryResult(data);
+                var result = LotteryService.CalculateLotteryResult(null, data, false);
 
                 // 下注金額：如果 totalBet 是唯讀計算屬性，就由 betAmounts 自行算；否則照你現在的寫法
                 totalBet += data.totalBet;
@@ -64,182 +65,194 @@ namespace YSPFrom
         /// 後端快速測試模式（寫死下注資料）；可傳入 logger 委派把結果丟到 UI。
         /// </summary>
         #region 固定下注法
-        //    public static void RunTestMode(Action<string> logger = null, int times = 1000)
-        //    {
-        //        if (logger == null) logger = Console.WriteLine;
-
-        //        // 固定下注組合
-        //        var betDataTemplate = new Dictionary<string, int>
+        //        public static void RunTestMode(Action<string> logger = null, int times = 1000)
         //        {
-        //            { "2X", 100 },
-        //            { "4X", 100 },
-        //            { "6X", 200 },
-        //            { "10X", 200 },
-        //            { "PRIZE_PICK", 200 },
-        //            { "GOLD_MANIA", 300 },
-        //            { "GOLDEN_TREASURE", 500 }
-        //        };
+        //            if (logger == null) logger = Console.WriteLine;
 
-        //        // 累計統計
-        //        int totalBets = 0;
-        //        int totalPayouts = 0;
-        //        var hitCounts = new Dictionary<string, int>();
-        //        var extraPayHits = new Dictionary<string, int>();
-
-        //        // 🆕 大獎命中統計（需有下注才計數）
-        //        var jackpotHitCounts = new Dictionary<string, int>
-        //        {
-        //            { "PRIZE_PICK", 0 },
-        //            { "GOLD_MANIA", 0 },
-        //            { "GOLDEN_TREASURE", 0 }
-        //        };
-
-        //        int balance = 5_000_000; // 初始餘額
-        //        long _currentRoundId = 0;
-        //        int actualRounds = 0;    // 🆕 實際跑了幾局
-
-        //        for (int i = 1; i <= times; i++)
-        //        {
-        //            var betData = new BetData { betAmounts = new Dictionary<string, int>(betDataTemplate) };
-        //            int betTotal = betData.totalBet;
-
-        //            // 🛑 餘額不足 → 停止模擬
-        //            if (balance < betTotal)
+        //            // 固定下注組合
+        //            var betDataTemplate = new Dictionary<string, int>
         //            {
-        //                logger($"⚠️ [第 {i} 局] 餘額不足，停止模擬。當前餘額={balance}, 需要={betTotal}");
-        //                break;
-        //            }
+        //                { "2X", 100 },
+        //                { "4X", 100 },
+        //                { "6X", 200 },
+        //                { "10X", 200 },
+        //                { "PRIZE_PICK", 200 },
+        //                { "GOLD_MANIA", 300 },
+        //                { "GOLDEN_TREASURE", 500 }
+        //            };
 
-        //            actualRounds++; // 記錄成功跑過的局數
+        //            // 累計統計
+        //            int totalBets = 0;
+        //            int totalPayouts = 0;
+        //            var hitCounts = new Dictionary<string, int>();
+        //            var extraPayHits = new Dictionary<string, int>();
 
-        //            // === BalanceBeforeBet ===
-        //            long roundId = RoundIdGenerator.NextId();
-        //            _currentRoundId = roundId;
-        //            LotteryLog(LotteryLogType.BalanceBeforeBet, balance, betTotal);
-
-        //            // === BalanceAfterBet ===
-        //            balance -= betTotal;
-        //            LotteryLog(LotteryLogType.BalanceAfterBet, balance);
-
-        //            // === 投注明細 ===
-        //            LotteryLog(LotteryLogType.BetAmounts, betData.betAmounts);
-
-        //            // === 獎池提撥 ===
-        //            SuperJackpotPool.AddContribution(betTotal);
-        //            LotteryLog(LotteryLogType.JackpotContribution, betTotal * 0.05, SuperJackpotPool.PoolBalance);
-
-        //            // === 抽獎 ===
-        //            var result = OutcomeSelector.Select(betData);
-
-        //            // === BalanceAfterPayout ===
-        //            balance += result.payout;
-        //            LotteryLog(LotteryLogType.BalanceAfterPayout, result.payout, balance);
-
-        //            // === 中獎結果 ===
-        //            LotteryLog(LotteryLogType.WinResult, result.rewardName, result.multiplier, result.payout);
-
-        //            // === RoundSummary（下半部左）===
-        //            LotteryLog(LotteryLogType.RoundSummary,
-        //                result.rewardName,
-        //                betTotal,
-        //                result.multiplier,
-        //                result.payout);
-
-        //            // === OtherInfo（下半部右）===
-        //            LotteryLog(LotteryLogType.OtherInfo, i, RTPManager.GetCurrentRTP(), totalBets, totalPayouts, balance, SuperJackpotPool.PoolBalance);
-
-        //            // === 命中大獎 ===
-        //            if ((result.rewardName == "PRIZE_PICK" ||
-        //                 result.rewardName == "GOLD_MANIA" ||
-        //                 result.rewardName == "GOLDEN_TREASURE") &&
-        //                betData.betAmounts.ContainsKey(result.rewardName) &&
-        //                betData.betAmounts[result.rewardName] > 0)
+        //            // 🆕 大獎命中統計（需有下注才計數）
+        //            var jackpotHitCounts = new Dictionary<string, int>
         //            {
-        //                jackpotHitCounts[result.rewardName]++;
-        //                LotteryLog(LotteryLogType.Jackpot, result.rewardName, result.multiplier, result.payout, RTPManager.GetCurrentRTP());
-        //            }
+        //                { "PRIZE_PICK", 0 },
+        //                { "GOLD_MANIA", 0 },
+        //                { "GOLDEN_TREASURE", 0 }
+        //            };
 
-        //            // === ExtraPay ===
-        //            if (result.extraPay != null)
+        //            int balance = 5_000_000; // 初始餘額
+        //            long _currentRoundId = 0;
+        //            int actualRounds = 0;    // 🆕 實際跑了幾局
+        //            string userId = "SIM_USER"; // 模擬玩家ID
+
+        //            for (int i = 1; i <= times; i++)
         //            {
-        //                LotteryLog(LotteryLogType.ExtraPayTriggered,
-        //                    result.extraPay.rewardName,
-        //                    betData.betAmounts[result.extraPay.rewardName],
-        //                    result.extraPay.extraMultiplier);
+        //                var betData = new BetData { betAmounts = new Dictionary<string, int>(betDataTemplate) };
+        //                int betTotal = betData.totalBet;
 
-        //                string key = result.extraPay.rewardName;
-        //                if (!extraPayHits.ContainsKey(key)) extraPayHits[key] = 0;
-        //                extraPayHits[key]++;
-        //            }
+        //                // 🛑 餘額不足 → 停止模擬
+        //                if (balance < betTotal)
+        //                {
+        //                    string stopMsg = $"⚠️ [第 {i} 局] 餘額不足，停止模擬。當前餘額={balance}, 需要={betTotal}";
+        //                    logger(stopMsg);
+        //                    Program.MainForm?.LogPlayerRoundBalance(stopMsg);
+        //                    break;
+        //                }
 
-        //            totalBets += betTotal;
-        //            totalPayouts += result.payout;
+        //                actualRounds++;
 
-        //            // 中獎統計
-        //            if (!hitCounts.ContainsKey(result.rewardName)) hitCounts[result.rewardName] = 0;
-        //            hitCounts[result.rewardName]++;
+        //                // === BalanceBeforeBet ===
+        //                long roundId = RoundIdGenerator.NextId();
+        //                _currentRoundId = roundId;
+        //                LogManager.LotteryLog(LogManager.LotteryLogType.BalanceBeforeBet, userId, balance, betTotal);
+
+        //                // === BalanceAfterBet ===
+        //                balance -= betTotal;
+        //                LogManager.LotteryLog(LogManager.LotteryLogType.BalanceAfterBet, balance);
+
+        //                // === 投注明細 ===
+        //                LogManager.LotteryLog(LogManager.LotteryLogType.BetAreaReceived, betData.betAmounts);
+
+        //                // === 獎池提撥 ===
+        //                SuperJackpotPool.AddContribution(betTotal);
+        //                LogManager.LotteryLog(LogManager.LotteryLogType.JackpotContribution, betTotal * 0.05, SuperJackpotPool.PoolBalance);
+
+        //                // === 抽獎 ===
+        //                var result = OutcomeSelector.Select(betData);
+
+        //                // === BalanceAfterPayout ===
+        //                balance += result.payout;
+        //                LogManager.LotteryLog(LogManager.LotteryLogType.BalanceAfterPayout, result.payout, balance);
+
+        //                // === WinResult ===
+        //                LogManager.LotteryLog(LogManager.LotteryLogType.WinResult, result.rewardName, result.multiplier, result.payout);
+
+        //                // === RoundSummary ===
+        //                int netChange = result.payout - betTotal;
+        //                LogManager.LotteryLog(LogManager.LotteryLogType.RoundSummary, result.rewardName, betTotal, result.multiplier, netChange);
 
 
-        //            // 每 1000 局輸出一次
-        //            if (i % 1000 == 0)
-        //            {
+    //        var ctx = new RoundContext
+    //        {
+    //            RoundId = roundId,
+    //            UserId = userId,
+    //            BetAmount = betTotal,
+    //            Contribution = (int)(betTotal * 0.05),
+    //            Payout = result.payout,
+    //            RewardName = result.rewardName,
+    //            Multiplier = result.multiplier,
+    //            IsJackpot = (result.rewardName == "PRIZE_PICK" ||
+    //result.rewardName == "GOLD_MANIA" ||
+    //result.rewardName == "GOLDEN_TREASURE"),
+    //            ExtraPay = result.extraPay,
+    //            BalanceBefore = balance + betTotal - result.payout,  // 注意 balance 已經更新過，要回推
+    //            BalanceAfter = balance,
+    //            PoolBalance = SuperJackpotPool.PoolBalance,
+    //            CurrentRTP = RTPManager.GetCurrentRTP()
+    //        };
+
+    //        LogManager.LotteryLog(LogManager.LotteryLogType.RoundWinSummary, ctx);
+
+        //                // === OtherInfo ===
         //                double rtpNow = totalBets > 0 ? (double)totalPayouts / totalBets : 0;
-        //                logger($"[第 {i} 局統計] 總下注={totalBets}, 總派彩={totalPayouts}, RTP={rtpNow:P2}");
+        //                LogManager.LotteryLog(LogManager.LotteryLogType.OtherInfo, i, rtpNow, totalBets, totalPayouts, balance, SuperJackpotPool.PoolBalance);
 
-        //                foreach (var kv in hitCounts)
+        //                // === 命中大獎 ===
+        //                if ((result.rewardName == "PRIZE_PICK" ||
+        //                     result.rewardName == "GOLD_MANIA" ||
+        //                     result.rewardName == "GOLDEN_TREASURE") &&
+        //                    betData.betAmounts.ContainsKey(result.rewardName) &&
+        //                    betData.betAmounts[result.rewardName] > 0)
         //                {
-        //                    double rate = (double)kv.Value / i * 100;
-        //                    logger($"{kv.Key}: {kv.Value} 次 ({rate:F2}%)");
+        //                    jackpotHitCounts[result.rewardName]++;
+        //                    LogManager.LotteryLog(LogManager.LotteryLogType.Jackpot, result.rewardName, result.multiplier, result.payout, RTPManager.GetCurrentRTP());
         //                }
 
-        //                // 🆕 大獎命中統計（有下注才算）
-        //                logger("=== 大獎命中統計（有下注才算） ===");
-        //                foreach (var jackpotName in jackpotHitCounts.Keys)
+        //                // === ExtraPay ===
+        //                if (result.extraPay != null)
         //                {
-        //                    double hitRate = (double)jackpotHitCounts[jackpotName] / i * 100;
-        //                    logger($"{jackpotName}: {jackpotHitCounts[jackpotName]} 次 ({hitRate:F2}%)");
+        //                    string key = result.extraPay.rewardName;
+        //                    if (!extraPayHits.ContainsKey(key)) extraPayHits[key] = 0;
+        //                    extraPayHits[key]++;
+        //                    LogManager.LotteryLog(LogManager.LotteryLogType.ExtraPayTriggered,
+        //                        key,
+        //                        betData.betAmounts[key],
+        //                        result.extraPay.extraMultiplier);
         //                }
 
-        //                logger("=== ExtraPay 命中統計 ===");
-        //                if (extraPayHits.Count == 0) logger("（目前未觸發）");
-        //                foreach (var kv in extraPayHits)
-        //                    logger($"{kv.Key}: {kv.Value} 次");
+        //                // === 更新統計 ===
+        //                totalBets += betTotal;
+        //                totalPayouts += result.payout;
+        //                if (!hitCounts.ContainsKey(result.rewardName)) hitCounts[result.rewardName] = 0;
+        //                hitCounts[result.rewardName]++;
 
-        //                logger("--------------------------");
+        //                // 每 1000 局輸出一次（原樣保留）
+        //                if (i % 1000 == 0)
+        //                {
+        //                    double rtpStat = totalBets > 0 ? (double)totalPayouts / totalBets : 0;
+        //                    logger($"[第 {i} 局統計] 總下注={totalBets}, 總派彩={totalPayouts}, RTP={rtpStat:P2}");
+
+        //                    foreach (var kv in hitCounts)
+        //                    {
+        //                        double rate = (double)kv.Value / i * 100;
+        //                        logger($"{kv.Key}: {kv.Value} 次 ({rate:F2}%)");
+        //                    }
+
+        //                    logger("=== 大獎命中統計（有下注才算） ===");
+        //                    foreach (var jackpotName in jackpotHitCounts.Keys)
+        //                    {
+        //                        double hitRate = (double)jackpotHitCounts[jackpotName] / i * 100;
+        //                        logger($"{jackpotName}: {jackpotHitCounts[jackpotName]} 次 ({hitRate:F2}%)");
+        //                    }
+
+        //                    logger("=== ExtraPay 命中統計 ===");
+        //                    if (extraPayHits.Count == 0) logger("（目前未觸發）");
+        //                    foreach (var kv in extraPayHits)
+        //                        logger($"{kv.Key}: {kv.Value} 次");
+
+        //                    logger("--------------------------");
+        //                }
         //            }
+
+        //            // === 最終統計 ===（原樣保留）
+        //            double rtpFinal = totalBets > 0 ? (double)totalPayouts / totalBets : 0;
+        //            logger($"[最終統計] 實際跑了 {actualRounds} 局 (計畫 {times} 局)，總下注={totalBets}, 總派彩={totalPayouts}, RTP={rtpFinal:P2}");
+
+        //            foreach (var kv in hitCounts)
+        //            {
+        //                double rate = (double)kv.Value / (actualRounds == 0 ? 1 : actualRounds) * 100;
+        //                logger($"{kv.Key}: {kv.Value} 次 ({rate:F2}%)");
+        //            }
+
+        //            logger("=== 大獎命中統計（有下注才算） ===");
+        //            foreach (var jackpotName in jackpotHitCounts.Keys)
+        //            {
+        //                double hitRate = (double)jackpotHitCounts[jackpotName] / (actualRounds == 0 ? 1 : actualRounds) * 100;
+        //                logger($"{jackpotName}: {jackpotHitCounts[jackpotName]} 次 ({hitRate:F2}%)");
+        //            }
+
+        //            logger("=== ExtraPay 命中統計 ===");
+        //            if (extraPayHits.Count == 0) logger("（本次未觸發）");
+        //            foreach (var kv in extraPayHits)
+        //                logger($"{kv.Key}: {kv.Value} 次");
         //        }
-
-        //        // === 最終統計 ===
-        //        double rtpFinal = totalBets > 0 ? (double)totalPayouts / totalBets : 0;
-        //        logger($"[最終統計] 實際跑了 {actualRounds} 局 (計畫 {times} 局)，總下注={totalBets}, 總派彩={totalPayouts}, RTP={rtpFinal:P2}");
-
-        //        foreach (var kv in hitCounts)
-        //        {
-        //            double rate = (double)kv.Value / (actualRounds == 0 ? 1 : actualRounds) * 100;
-        //            logger($"{kv.Key}: {kv.Value} 次 ({rate:F2}%)");
-        //        }
-
-        //        logger("=== 大獎命中統計（有下注才算） ===");
-        //        foreach (var jackpotName in jackpotHitCounts.Keys)
-        //        {
-        //            double hitRate = (double)jackpotHitCounts[jackpotName] / (actualRounds == 0 ? 1 : actualRounds) * 100;
-        //            logger($"{jackpotName}: {jackpotHitCounts[jackpotName]} 次 ({hitRate:F2}%)");
-        //        }
-
-        //        logger("=== ExtraPay 命中統計 ===");
-        //        if (extraPayHits.Count == 0) logger("（本次未觸發）");
-        //        foreach (var kv in extraPayHits)
-        //            logger($"{kv.Key}: {kv.Value} 次");
-        //    }
         //}
         #endregion
-
-
-
-
-
-
-
 
 
 
@@ -259,7 +272,7 @@ namespace YSPFrom
             if (logger == null) logger = Console.WriteLine;
 
             //累計統計
-                    int totalBets = 0;
+            int totalBets = 0;
             int totalPayouts = 0;
             var hitCounts = new Dictionary<string, int>();
             var extraPayHits = new Dictionary<string, int>();
@@ -275,6 +288,7 @@ namespace YSPFrom
             int balance = 100_000_000; // 初始餘額
             long _currentRoundId = 0;
             int actualRounds = 0;    // 🆕 實際跑了幾局
+            string userId = "SIM_USER"; // 模擬玩家ID
 
             for (int i = 1; i <= times; i++)
             {
@@ -312,40 +326,61 @@ namespace YSPFrom
                 // === BalanceBeforeBet ===
                 long roundId = RoundIdGenerator.NextId();
                 _currentRoundId = roundId;
-                LotteryLog(LotteryLogType.BalanceBeforeBet, balance, betTotal);
+                LogManager.LotteryLog(LogManager.LotteryLogType.BalanceBeforeBet, userId, balance, betTotal);
 
                 // === BalanceAfterBet ===
                 balance -= betTotal;
-                LotteryLog(LotteryLogType.BalanceAfterBet, balance);
+                LogManager.LotteryLog(LogManager.LotteryLogType.BalanceAfterBet, balance);
 
                 // === 投注明細 ===
-                LotteryLog(LotteryLogType.BetAmounts, betData.betAmounts);
+                LogManager.LotteryLog(LogManager.LotteryLogType.BetAreaReceived, betData.betAmounts);
 
                 // === 獎池提撥 ===
                 SuperJackpotPool.AddContribution(betTotal);
-                LotteryLog(LotteryLogType.JackpotContribution, betTotal * 0.05, SuperJackpotPool.PoolBalance);
+                LogManager.LotteryLog(LogManager.LotteryLogType.JackpotContribution, betTotal * 0.05, SuperJackpotPool.PoolBalance);
 
                 // === 抽獎 ===
                 var result = OutcomeSelector.Select(betData);
 
                 // === BalanceAfterPayout ===
                 balance += result.payout;
-                LotteryLog(LotteryLogType.BalanceAfterPayout, result.payout, balance);
+                LogManager.LotteryLog(LogManager.LotteryLogType.BalanceAfterPayout, result.payout, balance);
 
-                // === 中獎結果 ===
-                LotteryLog(LotteryLogType.WinResult, result.rewardName, result.multiplier, result.payout);
+                // === WinResult ===
+                LogManager.LotteryLog(LogManager.LotteryLogType.WinResult, result.rewardName, result.multiplier, result.payout);
 
-                Console.WriteLine("[DEBUG] 呼叫 RoundSummary 前");
-                // === RoundSummary（下半部左）===
-                LotteryLog(LotteryLogType.RoundSummary,
-                    result.rewardName,
-                    betTotal,
-                    result.multiplier,
-                    result.payout);
-                Console.WriteLine("[DEBUG] 呼叫 RoundSummary 後");
+                // === RoundSummary ===
+                int netChange = result.payout - betTotal;
+                LogManager.LotteryLog(LogManager.LotteryLogType.RoundSummary, result.rewardName, betTotal, result.multiplier, netChange);
 
-                // === OtherInfo（下半部右）===
-                LotteryLog(LotteryLogType.OtherInfo, i, RTPManager.GetCurrentRTP(), totalBets, totalPayouts, balance, SuperJackpotPool.PoolBalance);
+                // === RoundWinSummary ===
+                var ctx = new RoundContext
+                {
+                    RoundId = roundId,
+                    UserId = userId,
+                    BetAmount = betTotal,
+                    Contribution = (int)(betTotal * 0.05),
+                    Payout = result.payout,
+                    RewardName = result.rewardName,
+                    Multiplier = result.multiplier,
+                    IsJackpot = (result.rewardName == "PRIZE_PICK" ||
+                 result.rewardName == "GOLD_MANIA" ||
+                 result.rewardName == "GOLDEN_TREASURE"),
+                    ExtraPay = result.extraPay,
+                    BalanceBefore = balance + betTotal - result.payout,  // 注意 balance 已經更新過，要回推
+                    BalanceAfter = balance,
+                    PoolBalance = SuperJackpotPool.PoolBalance,
+                    CurrentRTP = RTPManager.GetCurrentRTP()
+                };
+
+                LogManager.LotteryLog(LogManager.LotteryLogType.RoundWinSummary, ctx);
+
+
+
+
+                // === OtherInfo ===
+                double rtpNow = totalBets > 0 ? (double)totalPayouts / totalBets : 0;
+                LogManager.LotteryLog(LogManager.LotteryLogType.OtherInfo, i, rtpNow, totalBets, totalPayouts, balance, SuperJackpotPool.PoolBalance);
 
                 // === 命中大獎 ===
                 if ((result.rewardName == "PRIZE_PICK" ||
@@ -355,26 +390,24 @@ namespace YSPFrom
                     betData.betAmounts[result.rewardName] > 0)
                 {
                     jackpotHitCounts[result.rewardName]++;
-                    LotteryLog(LotteryLogType.Jackpot, result.rewardName, result.multiplier, result.payout, RTPManager.GetCurrentRTP());
+                    LogManager.LotteryLog(LogManager.LotteryLogType.Jackpot, result.rewardName, result.multiplier, result.payout, RTPManager.GetCurrentRTP());
                 }
 
                 // === ExtraPay ===
                 if (result.extraPay != null)
                 {
-                    LotteryLog(LotteryLogType.ExtraPayTriggered,
-                        result.extraPay.rewardName,
-                        betData.betAmounts[result.extraPay.rewardName],
-                        result.extraPay.extraMultiplier);
-
                     string key = result.extraPay.rewardName;
                     if (!extraPayHits.ContainsKey(key)) extraPayHits[key] = 0;
                     extraPayHits[key]++;
+                    LogManager.LotteryLog(LogManager.LotteryLogType.ExtraPayTriggered,
+                        key,
+                        betData.betAmounts[key],
+                        result.extraPay.extraMultiplier);
                 }
 
+                // === 更新統計 ===
                 totalBets += betTotal;
                 totalPayouts += result.payout;
-
-                // 中獎統計
                 if (!hitCounts.ContainsKey(result.rewardName)) hitCounts[result.rewardName] = 0;
                 hitCounts[result.rewardName]++;
 
@@ -382,8 +415,8 @@ namespace YSPFrom
                 // 每 1000 局輸出一次
                 if (i % 1000 == 0)
                 {
-                    double rtpNow = totalBets > 0 ? (double)totalPayouts / totalBets : 0;
-                    logger($"[第 {i} 局統計] 總下注={totalBets}, 總派彩={totalPayouts}, RTP={rtpNow:P2}");
+                    double rtpStat = totalBets > 0 ? (double)totalPayouts / totalBets : 0;
+                    logger($"[第 {i} 局統計] 總下注={totalBets}, 總派彩={totalPayouts}, RTP={rtpStat:P2}");
 
                     foreach (var kv in hitCounts)
                     {
@@ -431,7 +464,7 @@ namespace YSPFrom
                 logger($"{kv.Key}: {kv.Value} 次");
         }
     }
-        #endregion
+    #endregion
 
 
 

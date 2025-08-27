@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using YSPFrom.Core.Logging;
 using YSPFrom.Core.RTP;
 using YSPFrom.Models;
 
@@ -43,7 +44,7 @@ namespace YSPFrom
         }
         #endregion
 
-        #region 金流 Log
+        #region 金流紀錄
        
         public void LogBalanceLeft(string msg) // 上半部左：抽獎前 & 扣注後
         {
@@ -72,19 +73,24 @@ namespace YSPFrom
         #endregion
 
         #region 中獎結果
-        public void LogResult(string message)   // 列印中獎結果(左分頁)
-        {
-            AppendTextSafe(logTextBox_Result, message);
-        }
-
-        public void LogBigResult(string msg)    // 列印重製前中獎結果與RTP(中分頁)
+        public void LogSummary(string msg)    // 列印中獎結果(上分頁)
         {
             AppendTextSafe(logTextBox2_Result, msg);
         }
 
-        public void LogJackpot(string message)  // 列印大獎事件(右分頁)
+        public void LogWin(string message)   // 列印中獎結果(左分頁)
         {
-            AppendTextSafe(logTextBox_Jackpot, message);
+            AppendTextSafe(logTextBox_Result, message);
+        }
+
+        public void LogJackpotHit(string msg) // 右下大獎命中
+        {
+            AppendTextSafe(logTextBox_Jackpot, "[命中] " + msg);
+        }
+
+        public void LogJackpotPool(string msg) // 右下獎池狀態
+        {
+            AppendTextSafe(logTextBox_Jackpot, "[獎池] " + msg);
         }
         #endregion
 
@@ -101,16 +107,77 @@ namespace YSPFrom
         #endregion
 
         #region 下注紀錄
-        public void LogBet(string message)   // 列印金流資料(後台計算)
+        public void LogBet(string message)   // 下注資料
         {
-            AppendTextSafe(logTextBox_Bet, message);
+            // 判斷是否在搜尋模式下
+            if (isSearching)
+            {
+                // 如果正在搜尋且資料包含搜尋關鍵字
+                if (message.Contains(currentSearchKeyword))
+                {
+                    AppendTextSafe(logTextBox_Bet, message);
+                    LogSearchManager.BatLogs.Add(message); // 儲存到 BatLogs 列表
+                    LogSearchManager.allLogs.Add(message); // 同時儲存到 allLogs 列表
+                }
+            } else
+            {
+                // 如果不是搜尋模式，顯示所有資料
+                AppendTextSafe(logTextBox_Bet, message);
+                LogSearchManager.BatLogs.Add(message); // 儲存到 BatLogs 列表
+                LogSearchManager.allLogs.Add(message); // 同時儲存到 allLogs 列表
+            }
         }
 
+        #region  Batlog 搜尋功能
+        private bool isSearching = false;  // 是否正在搜尋
+        private string currentSearchKeyword = "";  // 當前搜尋的關鍵字
 
+        private void btnSearch_Click(object sender, EventArgs e)    // 搜尋按鈕點擊事件
+        {
+            string keyword = txtSearch.Text.Trim();  // 取得搜尋的關鍵字
+            if (string.IsNullOrEmpty(keyword))
+            {
+                // 如果關鍵字是空的，顯示所有資料
+                logTextBox_Bet.Lines = LogSearchManager.BatLogs.ToArray();
+                logSearch.Clear();  // 清空搜尋結果顯示框
+                isSearching = false;
+                currentSearchKeyword = "";
+            }
+            else
+            {
+                // 設置搜尋模式，並且只顯示與關鍵字匹配的資料
+                currentSearchKeyword = keyword;
+                isSearching = true;
+
+                // 搜尋 BatLogs，並顯示結果
+                var results = LogSearchManager.SearchLogs(LogSearchManager.BatLogs, keyword);
+                if (results.Count == 0)
+                {
+                    //txtSearch.Text = "查無資料"; // 顯示查無資料
+                    logSearch.Lines = new string[] { "查無資料" };  // 如果沒找到，顯示查無資料
+                }
+                else
+                {
+                    //txtSearch.Text = ""; // 清空搜尋結果區域
+                    logSearch.Lines = results.ToArray();  // 顯示符合條件的結果
+                }
+            }
+        }
+
+        private void btnClear_Click(object sender, EventArgs e)  // 取消搜尋按鈕點擊事件
+        {
+            txtSearch.Text = "";  // 清空搜尋框
+            logSearch.Clear();  // 清空搜尋結果顯示框
+            // 恢復顯示所有資料
+            logTextBox_Bet.Lines = LogSearchManager.BatLogs.ToArray();
+            // 重製搜尋狀態
+            isSearching = false;
+            currentSearchKeyword = "";
+        }
+        #endregion
         #endregion
 
-
-        private void AppendTextSafe(TextBox box, string message)    
+        private void AppendTextSafe(TextBox box, string message)
         {
             if (box.InvokeRequired)
             {
@@ -124,6 +191,7 @@ namespace YSPFrom
                 box.AppendText($"{DateTime.Now:HH:mm:ss} {message}\r\n");
             }
         }
+
         private void logTextBox_Base_TextChanged(object sender, EventArgs e)
         {
             // 可留空或移除
@@ -147,7 +215,7 @@ namespace YSPFrom
             //            {
             //                string logs = buffer.ToString();
             //                buffer.Clear();
-            //                this.Invoke((Action)(() => LogBase(logs)));
+            //                this.Invoke((Action)(() => LogPlayereffort(logs)));
             //            }
 
 
@@ -156,7 +224,7 @@ namespace YSPFrom
             //    // 模擬完成後輸出剩餘的 log
             //    if (buffer.Length > 0)
             //    {
-            //        this.Invoke((Action)(() => LogBase(buffer.ToString())));
+            //        this.Invoke((Action)(() => LogPlayereffort(buffer.ToString())));
             //    }
             //});
             #endregion

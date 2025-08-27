@@ -181,13 +181,11 @@ namespace YSPFrom
 
             // 下注資料
             LogManager.LotteryLog(LogManager.LotteryLogType.BetDataReceived, data.totalBet, data.isAutoMode);       // 統一管理 Log
-            foreach (var entry in data.betAmounts)
-            {
-                LogManager.LotteryLog(LogManager.LotteryLogType.BetAreaReceived, entry.Key, entry.Value);       // 統一管理 Log
-            }
+            LogManager.LotteryLog(LogManager.LotteryLogType.BetAreaReceived, data.betAmounts);
+
 
             // 計算抽獎結果( 不改動餘額)
-            var result = LotteryService.CalculateLotteryResult(data);
+            var result = LotteryService.CalculateLotteryResult(player, data);
 
             // 派彩加回餘額( 使用 LotteryResponse)
             player.Balance += result.payout;

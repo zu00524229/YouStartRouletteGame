@@ -80,7 +80,8 @@ namespace YSPFrom.Engine.Outcome
             //    $"中倍加成={boostMid:0.000}, " +
             //    $"高倍加成={boostHigh:0.000}"
             //);
-            LogManager.LotteryLog(LotteryLogType.PoolBiasAdjustment, alpha, boostLow, boostMid, boostHigh); // 統一Log 管理
+
+            //LogManager.LotteryLog(LotteryLogType.PoolBiasAdjustment, alpha, boostLow, boostMid, boostHigh); // 統一Log 管理 (先不用)
 
 
             #endregion

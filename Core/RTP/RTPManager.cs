@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using YSPFrom.Configs;
+using YSPFrom.Core.SuperJackpot;
 
 namespace YSPFrom.Core.RTP
 {
@@ -96,10 +97,10 @@ namespace YSPFrom.Core.RTP
         // === 淨利計算 ===
         public static float GetNetProfit()
         {
-            return lifetimeBets - lifetimePayouts;
+            return (lifetimeBets - lifetimePayouts) - (float)SuperJackpotPool.PoolBalance;
         }
 
-        // === 大獎最大倍率表（最壞情況用） ===
+        // === 大獎最大倍率表（最壞情況用） ===F
         private static readonly Dictionary<string, int> JackpotMaxMultiplier = new Dictionary<string, int>
         {
             { "PRIZE_PICK", 20 },        // 15/60/73/91/100 → 取最大100
@@ -159,27 +160,37 @@ namespace YSPFrom.Core.RTP
         // RTP 狀態訊息(除錯用)
         public static string GetRTPStatusMessage()
         {
-            // string.Format 用來將 {0}~{3} 的參數依序套入字串
-            // {0:0.0000} 與 {1:0.0000} 表示四位小數
+            double bets = Convert.ToDouble(totalBets);
+            double payouts = Convert.ToDouble(totalPayouts);
+            double net = bets - payouts - SuperJackpotPool.PoolBalance; // 真正淨利（已扣獎池）
+
             return string.Format(
-                "【RTP 狀態】當前RTP={0:0.0000}, 滾動RTP={1:0.0000}, 累積派彩={2}, 總下注金額={3}",
-                GetCurrentRTP(),   // {0} → 當前 RTP
-                GetRollingRTP(),   // {1} → 滾動 RTP
-                totalPayouts,      // {2} → 總派彩金額
-                totalBets          // {3} → 總下注金額
+                "【RTP 狀態】當前RTP={0:0.0000}, 滾動RTP={1:0.0000}, 總下注={2:0}, 總派彩={3:0}, 淨利={4:0}, 大獎池={5:0}, 局數={6}",
+                GetCurrentRTP(),                     // {0} → 當前 RTP
+                GetRollingRTP(),                     // {1} → 滾動 RTP
+                bets,                                // {2} → 總下注
+                payouts,                             // {3} → 總派彩
+                net,                                 // {4} → 真正淨利
+                SuperJackpotPool.PoolBalance,        // {5} → 大獎池餘額
+                spinCount                            // {6} → 總局數
             );
         }
 
         // 輸出歷史累積數據 (方便後臺分析)
         public static void LogLifetimeStats()
         {
+            // 計算實際淨利（扣掉大獎池）
+            double net = Convert.ToDouble(lifetimeBets) - Convert.ToDouble(lifetimePayouts) - SuperJackpotPool.PoolBalance;
+
             // 1) 基本統計
             string msg = string.Format(
-                "[{0:HH:mm:ss}] 累計轉盤次數={1}, 累計派彩={2}, 累計注額={3}",
+                "累計轉盤次數={1}, 總派彩={2}, 總下注={3}, 淨利={4}, 大獎池={5}",
                 DateTime.Now,
                 lifetimeSpinCount,
                 lifetimePayouts,
-                lifetimeBets
+                lifetimeBets,
+                net,
+                SuperJackpotPool.PoolBalance
             );
             Console.WriteLine(msg);
             Program.MainForm?.LogRTPhistory(msg);
@@ -187,7 +198,7 @@ namespace YSPFrom.Core.RTP
             // 2) 歷史 RTP
             float lifetimeRTP = lifetimeBets == 0f ? 0f : lifetimePayouts / lifetimeBets;
             string hisRTP = string.Format(
-                "[{0:HH:mm:ss}] 歷史RTP={1:0.0000}, 判斷是否符合收益",
+                "歷史RTP={1:0.0000}, 判斷是否符合收益",
                 DateTime.Now,
                 lifetimeRTP
             );
