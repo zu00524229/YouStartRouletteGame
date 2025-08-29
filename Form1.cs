@@ -219,7 +219,7 @@ namespace YSPFrom
             //            }
 
 
-            //        }, times: 50000);
+            //        }, times: 25000);
 
             //    // 模擬完成後輸出剩餘的 log
             //    if (buffer.Length > 0)

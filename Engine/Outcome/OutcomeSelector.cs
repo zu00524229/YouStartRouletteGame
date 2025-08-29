@@ -74,16 +74,7 @@ namespace YSPFrom.Engine.Outcome
                  $"中倍加成={boostMid:0.000}, " +
                  $"高倍加成={boostHigh:0.000}"
              );
-            //Program.MainForm?.LogRTP(
-            //    $"[偏壓調整] α(控獎強度)={alpha:0.000}, " +
-            //    $"低倍加成={boostLow:0.000}, " +
-            //    $"中倍加成={boostMid:0.000}, " +
-            //    $"高倍加成={boostHigh:0.000}"
-            //);
-
-            //LogManager.LotteryLog(LotteryLogType.PoolBiasAdjustment, alpha, boostLow, boostMid, boostHigh); // 統一Log 管理 (先不用)
-
-
+         
             #endregion
 
             #region ) 大獎占比封頂 （封頂時不考慮 BOOST） // 差0.005 RTP 就差了7% 我的天(目前0.02，五萬局是 RTP 90%上下)

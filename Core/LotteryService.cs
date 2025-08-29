@@ -104,6 +104,21 @@ namespace YSPFrom
             LogManager.LotteryLog(
                  LotteryLogType.RoundWinSummary, roundCtx);  // 統一管理log
 
+            // === 命中大獎 ===
+            if ((outcome.rewardName == "PRIZE_PICK" ||
+                 outcome.rewardName == "GOLD_MANIA" ||
+                 outcome.rewardName == "GOLDEN_TREASURE") &&
+                data.betAmounts.ContainsKey(outcome.rewardName) &&
+                data.betAmounts[outcome.rewardName] > 0)
+            {
+                LogManager.LotteryLog(
+                    LotteryLogType.Jackpot,
+                    outcome.rewardName,
+                    finalMultiplier,
+                    winAmount,
+                    RTPManager.GetCurrentRTP());
+            }
+
             // 若中大獎類 → 儲存紀錄並延遲重置
             if (outcome.isJackpot)
             {

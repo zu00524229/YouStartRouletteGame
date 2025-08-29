@@ -329,11 +329,11 @@ namespace YSPFrom.Core.Logging
 
                 case LotteryLogType.JackpotThresholdOK:
                     {
-                        string rewardName = (string)args[0];
+                        string rewardNameWithMul = (string)args[0]; // 現在可以是 "GOLD_MANIA(25~25)"
                         double net = (double)args[1];
                         double probability = (double)args[2];
 
-                        string msg = $"[門檻] ✅ {rewardName} 達標 → 淨利={net:0} | 中獎機率={probability:P4}";
+                        string msg = $"[門檻] ✅ {rewardNameWithMul} 達標 → 淨利={net:0} | 中獎機率={probability:P4}";
                         Console.WriteLine(msg);
                         Program.MainForm?.LogJackpotPool(msg);
                     }
@@ -341,11 +341,11 @@ namespace YSPFrom.Core.Logging
 
                 case LotteryLogType.JackpotThresholdFail:
                     {
-                        string rewardName = (string)args[0];
+                        string rewardNameWithMul = (string)args[0];
                         double need = (double)args[1];
                         double net = (double)args[2];
 
-                        string msg = $"[安全機制] ❌ 淨利不足 → 移除 {rewardName} | 需求={need:0}, 淨利={net:0}";
+                        string msg = $"[門檻] ❌ {rewardNameWithMul} 未達標 → 需求={need:0} | 淨利={net:0}";
                         Console.WriteLine(msg);
                         Program.MainForm?.LogJackpotPool(msg);
                     }

@@ -92,7 +92,12 @@ namespace YSPFrom
         private static readonly Dictionary<string, Player> playersDb = new Dictionary<string, Player>
     {
         { "ethan",  new Player { UserId = "ethan",  Passworld = "zxc123", Balance = 5000000 } },
-        { "player", new Player { UserId = "player", Passworld = "zxc123", Balance = 10000000 } }
+        { "player", new Player { UserId = "player", Passworld = "zxc123", Balance = 10000000 } },
+        { "player2", new Player { UserId = "player2", Passworld = "zxc123", Balance = 10000000 } },
+        { "player3", new Player { UserId = "player3", Passworld = "zxc123", Balance = 10000000 } },
+        { "player4", new Player { UserId = "player4", Passworld = "zxc123", Balance = 10000000 } },
+        { "player5", new Player { UserId = "player5", Passworld = "zxc123", Balance = 10000000 } },
+        { "player6", new Player { UserId = "player6", Passworld = "zxc123", Balance = 10000000 } },
     };
 
         // 登入並綁定 ConnectionId

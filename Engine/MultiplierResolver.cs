@@ -50,8 +50,8 @@ namespace YSPFrom.Engine
                         return GetWeighted(safeWrights);
 
                     Console.WriteLine("[倍率檢查] 全部倍率超過安全上限 → 回退最小倍率");
-                    // 如果全被剔除, 回退最小倍率
-                    return weightMap.Keys.Min();
+                    
+                    return weightMap.Keys.Min();    // 如果全被剔除, 回退最小倍率
                 }
                 return GetWeighted(weightMap);
             }
@@ -73,8 +73,8 @@ namespace YSPFrom.Engine
                 if (roll <= cumulative)
                     return kv.Key;
             }
-            // ⚠️ 極小機率：若沒選中任何項目，就選最小的倍率
-            return weightMap.Keys.Min();
+            
+            return weightMap.Keys.Min(); // ⚠️ 極小機率：若沒選中任何項目，就選最小的倍率
         }
 
         // 對數分佈抽樣
