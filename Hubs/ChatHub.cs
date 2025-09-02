@@ -152,6 +152,8 @@ namespace YSPFrom
         {
             // 找玩家用 ConnectionId 比較安全)
             var player = playersDb.Values.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+            long roundId = Core.Utils.RoundIdGenerator.NextId();
+
             if (player == null)
             {
                 Clients.Caller.lotteryResult(new LotteryResponse
@@ -201,6 +203,7 @@ namespace YSPFrom
             var response = new LotteryResponse
             {
                 //result = result,            // 抽獎結果資料
+                roundId = roundId,
                 balanceBefore = before,     // 抽獎前餘額
                 balanceAfter = afterCredit, // 最終餘額
                 totalBet = data.totalBet,   // 餘額充足, 成功扣款開獎

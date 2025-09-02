@@ -9,6 +9,8 @@ namespace YSPFrom.Models
     // ✨ 回傳給前端的封包（包含抽獎結果 + 結算後的餘額資訊）
     public class LotteryResponse
     {
+        // 當前局號
+        public long roundId { get; set; }    
         //public LotteryResult result { get; set; }
         // 抽獎結果資料（名稱、倍率、派彩金額、ExtraPay 等）
 

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using YourNamespace.Core.Utils;
+using YSPFrom.Core.Utils;
 using YSPFrom.Core.Logging;
 using YSPFrom.Core.RTP;
 using YSPFrom.Core.SuperJackpot;

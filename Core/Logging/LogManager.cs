@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using YourNamespace.Core.Utils;
+using YSPFrom.Core.Utils;
 using YSPFrom;
 using YSPFrom.Core.RTP;
 using YSPFrom.Core.SuperJackpot;
