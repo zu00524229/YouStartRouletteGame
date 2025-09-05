@@ -19,7 +19,7 @@ namespace YSPFrom
         public static SimulationResult RunSimulation(BetData data, int simulateCount)
         {
             int totalBet = 0;
-            int totalPayout = 0;
+            long totalPayout = 0;
 
             var hitCounts = new Dictionary<string, int>();
             var extraPayHits = new Dictionary<string, int>(); // ExtraPay 統計
@@ -49,7 +49,7 @@ namespace YSPFrom
                 }
             }
 
-            float rtp = totalBet > 0 ? (float)totalPayout / totalBet : 0f;
+            float rtp = totalBet > 0 ? totalPayout / totalBet : 0f;
 
             return new SimulationResult
             {
@@ -272,7 +272,7 @@ namespace YSPFrom
 
             //累計統計
             int totalBets = 0;
-            int totalPayouts = 0;
+            long totalPayouts = 0;
             var hitCounts = new Dictionary<string, int>();
             var extraPayHits = new Dictionary<string, int>();
 
@@ -284,7 +284,7 @@ namespace YSPFrom
                         { "GOLDEN_TREASURE", 0 }
                     };
 
-            int balance = 100_000_000; // 初始餘額
+            long balance = 100_000_000; // 初始餘額
             long _currentRoundId = 0;
             int actualRounds = 0;    // 🆕 實際跑了幾局
             string userId = "SIM_USER"; // 模擬玩家ID
@@ -349,7 +349,7 @@ namespace YSPFrom
                 LogManager.LotteryLog(LogManager.LotteryLogType.WinResult, result.rewardName, result.multiplier, result.payout);
 
                 // === RoundSummary ===
-                int netChange = result.payout - betTotal;
+                long netChange = result.payout - betTotal;
                 LogManager.LotteryLog(LogManager.LotteryLogType.RoundSummary, result.rewardName, betTotal, result.multiplier, netChange);
 
                 // === RoundWinSummary ===
@@ -470,8 +470,8 @@ namespace YSPFrom
 
     public class SimulationResult
     {
-        public int TotalBets { get; set; }
-        public int TotalPayouts { get; set; }
+        public long TotalBets { get; set; }
+        public long TotalPayouts { get; set; }
         public float RTP { get; set; }
         public Dictionary<string, int> HitCounts { get; set; }
         public Dictionary<string, int> ExtraPayHits { get; set; }

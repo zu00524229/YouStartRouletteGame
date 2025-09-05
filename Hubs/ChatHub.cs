@@ -47,6 +47,14 @@ namespace YSPFrom
                 LogManager.LotteryLog(LogManager.LotteryLogType.PlayerLogoutBalance, player.UserId, player.Balance);
 
                 player.ConnectionId = null; // 清掉斷線
+
+                Clients.Client(connId).broadcastMessage("Disconnected", new
+                {
+                    message = "連線已中斷,請重新登入",
+                    userId = player.UserId
+                });
+                // 你想通知其他人（例如同桌玩家），用 Clients.All / Clients.Others
+                // Clients.All.broadcastMessage("PlayerDisconnected", new { userId = player.UserId });
             }
 
             return base.OnDisconnected(stopCalled);
@@ -91,13 +99,15 @@ namespace YSPFrom
         // 玩家資料庫（假資料）
         private static readonly Dictionary<string, Player> playersDb = new Dictionary<string, Player>
     {
-        { "ethan",  new Player { UserId = "ethan",  Passworld = "zxc123", Balance = 5000000 } },
-        { "player", new Player { UserId = "player", Passworld = "zxc123", Balance = 10000000 } },
-        { "player2", new Player { UserId = "player2", Passworld = "zxc123", Balance = 10000000 } },
-        { "player3", new Player { UserId = "player3", Passworld = "zxc123", Balance = 10000000 } },
-        { "player4", new Player { UserId = "player4", Passworld = "zxc123", Balance = 10000000 } },
-        { "player5", new Player { UserId = "player5", Passworld = "zxc123", Balance = 10000000 } },
-        { "player6", new Player { UserId = "player6", Passworld = "zxc123", Balance = 10000000 } },
+        { "ethan",  new Player { UserId = "ethan",  Passworld = "zxc123", Balance = 1000000 } },
+        { "ed",  new Player { UserId = "ed",  Passworld = "zxc123", Balance = 1000000 } },
+        { "book",  new Player { UserId = "book",  Passworld = "zxc123", Balance = 1000000 } },
+        { "player", new Player { UserId = "player", Passworld = "zxc123", Balance = 1000000 } },
+        { "player2", new Player { UserId = "player2", Passworld = "zxc123", Balance = 1000000 } },
+        { "player3", new Player { UserId = "player3", Passworld = "zxc123", Balance = 1000000 } },
+        { "player4", new Player { UserId = "player4", Passworld = "zxc123", Balance = 1000000 } },
+        { "player5", new Player { UserId = "player5", Passworld = "zxc123", Balance = 1000000 } },
+        { "player6", new Player { UserId = "player6", Passworld = "zxc123", Balance = 1000000 } },
     };
 
         // 登入並綁定 ConnectionId
@@ -150,9 +160,12 @@ namespace YSPFrom
         // ✅ 下注流程：根據 ConnectionId 找玩家
         public void StartLottery(BetData data)
         {
+
             // 找玩家用 ConnectionId 比較安全)
+            string roundId = Core.Utils.RoundIdGenerator.NextIdString();
+
             var player = playersDb.Values.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
-            long roundId = Core.Utils.RoundIdGenerator.NextId();
+            Console.WriteLine($"[StartLottery] round={roundId}, player={player.UserId}, totalBet={data.totalBet}, balanceBefore={player.Balance}");
 
             if (player == null)
             {
@@ -164,8 +177,23 @@ namespace YSPFrom
                 return;
             }
 
+            // === 0) 基本防呆：檢查 data 是否有效(防止 Heisenbug 程序錯誤) ===
+            if (data == null || data.totalBet <= 0)
+            {
+                Clients.Caller.lotteryResult(new LotteryResponse
+                {
+                    message = "下注金額錯誤",
+                    balanceBefore = player?.Balance ?? 0,
+                    balanceAfter = player?.Balance ?? 0,
+                    totalBet = data?.totalBet ?? 0
+                });
+
+                Console.WriteLine($"[StartLottery] round={roundId}, totalBet 無效={data?.totalBet}");
+                return;
+            }
+
             // 檢查餘額是否足夠
-            if  (player.Balance < data.totalBet)
+            if (player.Balance < data.totalBet)
             {
                 Clients.Caller.lotteryResult(new LotteryResponse
                 {
@@ -178,26 +206,39 @@ namespace YSPFrom
                 return;
             }
 
+
+            // ================= 進入金流關鍵路徑 ================
             // 扣除下注金額
             var before = player.Balance;        // 抽獎前餘額
             LotteryLog(LotteryLogType.BalanceBeforeBet, player.UserId, player.Balance, data.totalBet);
 
+            // ) 扣款（唯一扣點）
             player.Balance -= data.totalBet;    // 扣住
             var afterDebit = player.Balance;    // 扣住後餘額( 還未派彩 )
             LotteryLog(LotteryLogType.BalanceAfterBet, player.Balance);     // 統一管理log 
 
-            // 下注資料
+            // ) 記錄下注資料（確保不會是上局殘留）
             LogManager.LotteryLog(LogManager.LotteryLogType.BetDataReceived, data.totalBet, data.isAutoMode);       // 統一管理 Log
             LogManager.LotteryLog(LogManager.LotteryLogType.BetAreaReceived, data.betAmounts);
 
-
-            // 計算抽獎結果( 不改動餘額)
+            // 7) 開獎（務必確定不改 player.Balance）
             var result = LotteryService.CalculateLotteryResult(player, data);
 
             // 派彩加回餘額( 使用 LotteryResponse)
             player.Balance += result.payout;
             var afterCredit = player.Balance;  // 派彩後餘額( 最終 )
-            LotteryLog(LotteryLogType.BalanceAfterPayout, result.payout, afterCredit);  // 統一管理log 
+            //LotteryLog(LotteryLogType.BalanceAfterPayout, result.payout, afterCredit);  // 統一管理log 
+
+            // 9) 應得關係式（防呆核對，若不相等就寫 Log 便於抓 bug）
+            long expectedAfter = before - data.totalBet + result.payout;
+            if (afterCredit != expectedAfter)
+            {
+
+                // 可視需要在此強制修正：
+                player.Balance = expectedAfter;
+                afterCredit = expectedAfter;
+            }
+            LotteryLog(LotteryLogType.BalanceAfterPayout, result.payout, player.Balance); // 統一管理log 
 
             // 回傳完整封包
             var response = new LotteryResponse

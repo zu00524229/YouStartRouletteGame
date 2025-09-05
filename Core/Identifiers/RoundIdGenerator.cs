@@ -10,6 +10,11 @@ namespace YSPFrom.Core.Utils
         private static readonly long MachineId = 1; // 改成每台伺服器的唯一 ID
         private const long Twepoch = 1609459200000L; // 2021-01-01 00:00:00 UTC
 
+        public static string NextIdString()
+        {
+            return NextId().ToString();
+        }
+
         public static long NextId()
         {
             lock (_lock)

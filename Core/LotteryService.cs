@@ -22,7 +22,7 @@ namespace YSPFrom
         // ===== 🎰 主邏輯：新版平滑控獎抽獎 =====
         public static LotteryResult CalculateLotteryResult(Player player, BetData data, bool affectBalance = true)
         {
-            int balanceBefore = player?.Balance ?? 0;
+            long balanceBefore = player?.Balance ?? 0;
 
             // 扣下注金額
             if (affectBalance && player != null)
@@ -36,7 +36,7 @@ namespace YSPFrom
             ExtraPayInfo extraPayInfo = outcome.extraPay;
 
             int finalMultiplier = outcome.multiplier;
-            int winAmount = outcome.payout;
+            long winAmount = outcome.payout;
 
             // 處理 ExtraPay（若有的話）
             if (extraPayInfo != null && extraPayInfo.rewardName == outcome.rewardName)

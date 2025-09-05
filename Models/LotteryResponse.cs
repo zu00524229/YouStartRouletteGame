@@ -10,22 +10,22 @@ namespace YSPFrom.Models
     public class LotteryResponse
     {
         // 當前局號
-        public long roundId { get; set; }    
+        public string roundId { get; set; }    
         //public LotteryResult result { get; set; }
         // 抽獎結果資料（名稱、倍率、派彩金額、ExtraPay 等）
 
-        public int balanceBefore { get; set; }
+        public long balanceBefore { get; set; }
         // 抽獎前玩家餘額（扣下注金額前的數值）
 
-        public int balanceAfter { get; set; }
+        public long balanceAfter { get; set; }
         // 抽獎結算後玩家餘額（派彩加回後的最終數值）
 
-        public int totalBet { get; set; }
+        public long totalBet { get; set; }
         // 本輪總下注金額（來自 BetData.totalBet）
 
 
         //public int netChange => (result?.payout ?? 0) - totalBet;
-        public int netChange => balanceAfter - balanceBefore;
+        public long netChange => balanceAfter - balanceBefore;
         // 本輪淨變化金額（派彩金額 - 下注金額）
         // 正數代表贏錢，負數代表輸錢，0 代表打平
 

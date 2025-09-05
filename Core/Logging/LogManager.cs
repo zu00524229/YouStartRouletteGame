@@ -97,7 +97,7 @@ namespace YSPFrom.Core.Logging
                 case LotteryLogType.PlayerLogoutBalance:
                     {
                         string userId = (string)args[0];
-                        int balance = (int)args[1];
+                        long balance = (int)args[1];
 
                         string msg = $"❌ 玩家登出：[ {userId} ] 登出時餘額={balance}";
                         Console.WriteLine(msg);
@@ -131,7 +131,7 @@ namespace YSPFrom.Core.Logging
                         long roundId = _currentRoundId;
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-                        int totalBet = Convert.ToInt32(args[0]);
+                        long totalBet = Convert.ToInt32(args[0]);
                         bool isAutoMode = Convert.ToBoolean(args[1]);
 
                         string msg = $"[{userId}][局號={roundId}] 總下注={totalBet}, Auto={isAutoMode}";
@@ -172,7 +172,7 @@ namespace YSPFrom.Core.Logging
 
                         string rewardName = (string)args[0];
                         int finalMultiplier = (int)args[1];
-                        int winAmount = (int)args[2];
+                        long winAmount = (int)args[2];
                         double currentRTP = (float)args[3];
 
                         if (winAmount > 0)
@@ -236,7 +236,7 @@ namespace YSPFrom.Core.Logging
 
                         string rewardName = (string)args[0];
                         int finalMultiplier = (int)args[1];
-                        int winAmount = (int)args[2];
+                        long winAmount = GetLong(args, 2);
 
                         if (winAmount > 0)
                         {
@@ -255,8 +255,8 @@ namespace YSPFrom.Core.Logging
 
                 case LotteryLogType.JackpotContribution:
                     {
-                        double contribution = (double)args[0];
-                        double poolBalance = (double)args[1];
+                        long contribution = GetLong(args, 0);
+                        long poolBalance = GetLong(args, 1);
 
                         string msg = $"提撥 {contribution} → 超級大獎池餘額={poolBalance:0}";
                         Console.WriteLine(msg);
@@ -306,7 +306,7 @@ namespace YSPFrom.Core.Logging
                         string rewardName = (string)args[0];
                         int betOnHit = (int)args[1];
                         int multiplier = (int)args[2];
-                        int payout = (int)args[3];
+                        long payout = GetLong(args, 3);
                         Console.WriteLine($"[DEBUG] hit={rewardName}, betOnHit={betOnHit}, multiplier={multiplier}, payout={payout}");
                     }
                     break;
@@ -318,8 +318,8 @@ namespace YSPFrom.Core.Logging
                 case LotteryLogType.JackpotPoolInsufficient:
                     {
                         string rewardName = (string)args[0];
-                        double needPool = (double)args[1];
-                        double poolBalance = (double)args[2];
+                        long needPool = Convert.ToInt64(args[1]);
+                        long poolBalance = (long)args[2];
 
                         string msg = $"❌ 獎池不足 → 移除 {rewardName} | 需求={needPool:0}, 現有={poolBalance:0}";
                         Console.WriteLine(msg);
@@ -373,8 +373,8 @@ namespace YSPFrom.Core.Logging
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
                         string rewardName = (string)args[0];   // ✅ 區域名稱
-                        int betAmount = (int)args[1];          // ✅ 下注金額
-                        int extraMultiplier = (int)args[2];    // ✅ 加倍倍數
+                        long betAmount = GetLong(args, 1);          // ✅ 下注金額
+                        int extraMultiplier = Convert.ToInt32(args[2]);    // ✅ 加倍倍數
 
                         if (betAmount > 0)
                         {
@@ -400,8 +400,8 @@ namespace YSPFrom.Core.Logging
                         // ✅ 綁定局號 -> 玩家ID
                         _roundUserMap[roundId] = userId;
 
-                        int balanceBefore = Convert.ToInt32(args[1]);
-                        int totalBet = Convert.ToInt32(args[2]);
+                        long balanceBefore = GetLong(args, 1);
+                        long totalBet = GetLong(args, 2);
 
                         string msg = $"[{userId}][局號={roundId}] 餘額流動：{balanceBefore} → (下注 {totalBet})";
                         Console.WriteLine(msg);
@@ -416,7 +416,7 @@ namespace YSPFrom.Core.Logging
                         long roundId = _currentRoundId;
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-                        int balanceAfterBet = Convert.ToInt32(args[0]);
+                        long balanceAfterBet = Convert.ToInt32(args[0]);
 
                         string msg = $"[{userId}][局號={roundId}] 扣注後餘額={balanceAfterBet}";
                         Program.MainForm?.LogBalanceLeft(msg);  // ① 玩家餘額變化
@@ -430,8 +430,8 @@ namespace YSPFrom.Core.Logging
                         long roundId = _currentRoundId;
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-                        int payout = Convert.ToInt32(args[0]);
-                        int balanceAfterPayout = Convert.ToInt32(args[1]);
+                        long payout = Convert.ToInt64(args[0]);
+                        long balanceAfterPayout = Convert.ToInt32(args[1]);
 
                         string msg = $"[{userId}][局號={roundId}] 派彩={payout}, 結算後餘額={balanceAfterPayout}";
                         Console.WriteLine(msg);
@@ -447,9 +447,9 @@ namespace YSPFrom.Core.Logging
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
                         string rewardName = Convert.ToString(args[0]);
-                        int betAmount = Convert.ToInt32(args[1]);
-                        int multiplier = Convert.ToInt32(args[2]);
-                        int netChange = Convert.ToInt32(args[3]);
+                        long betAmount = Convert.ToInt32(args[1]);
+                        long multiplier = Convert.ToInt32(args[2]);
+                        long netChange = Convert.ToInt32(args[3]);
 
                         string msg = $"[{userId}][局號={roundId}] 下注={betAmount}, 獎項={rewardName}, 倍率={multiplier}, 淨變化={(netChange >= 0 ? "+" : "")}{netChange}";
                         Console.WriteLine(msg);
@@ -465,9 +465,9 @@ namespace YSPFrom.Core.Logging
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
                         double rtp = Convert.ToDouble(args[1]);
-                        int bets = Convert.ToInt32(args[2]);
-                        int payouts = Convert.ToInt32(args[3]);
-                        int bal = Convert.ToInt32(args[4]);
+                        long bets = GetLong(args, 2);
+                        long payouts = GetLong(args, 3);
+                        long bal = GetLong(args, 4);
                         double jackpot = Convert.ToDouble(args[5]);
 
                         string msg = $"[{userId}][局號={roundId}] RTP={rtp:0.0000}, 總下注={bets}, 總派彩={payouts}, 餘額={bal}, 超大獎池累積金額={jackpot:0}";
@@ -485,6 +485,7 @@ namespace YSPFrom.Core.Logging
         #region 舊版
 
         #endregion
+
 
 
         // 小工具：安全取得 int / long

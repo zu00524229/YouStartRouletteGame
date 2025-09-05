@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,18 +12,18 @@ namespace YSPFrom.Core.SuperJackpot
     /// </summary>
     public static class SuperJackpotPool
     {
-        public static double PoolBalance { get; private set; }
+        public static long PoolBalance { get; private set; }
         public static double PoolRate = 0.05; // 提撥比例 (5%)
 
         /// <summary>
         /// 本局提撥
         /// </summary>
-        public static double AddContribution(int totalBet)
+        public static long AddContribution(long totalBet)
         {
-            double contribution = 0;
+            long contribution = 0;
             if (totalBet > 0)
             {
-                contribution = totalBet * PoolRate;
+                contribution = (long)(totalBet * PoolRate); // 用 long 儲存
                 PoolBalance += contribution;
                 Console.WriteLine($"[SJP] 本局提撥 {contribution}, 大獎池餘額={PoolBalance}");
             }
@@ -32,7 +33,7 @@ namespace YSPFrom.Core.SuperJackpot
         /// <summary>
         /// 扣除派彩
         /// </summary>
-        public static void Deduct(int payout)
+        public static void Deduct(long payout)
         {
             if (payout > 0)
             {
@@ -44,9 +45,8 @@ namespace YSPFrom.Core.SuperJackpot
 
         /// <summary>
         /// 手動加錢（活動/營運調整）
-        /// 尚未使用
         /// </summary>
-        public static void Inject(double amount)
+        public static void Inject(long amount)
         {
             if (amount > 0)
             {
@@ -55,4 +55,5 @@ namespace YSPFrom.Core.SuperJackpot
             }
         }
     }
+
 }

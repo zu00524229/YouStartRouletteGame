@@ -12,14 +12,14 @@ namespace YSPFrom.Models
         public string UserId { get; set; }
 
         // 下注與派彩
-        public int BetAmount { get; set; }
-        public int Contribution { get; set; }   // 提撥獎池
-        public int Payout { get; set; }
-        public int NetChange => Payout - BetAmount;
+        public long BetAmount { get; set; }
+        public long Contribution { get; set; }   // 提撥獎池
+        public long Payout { get; set; }
+        public long NetChange => Payout - BetAmount;
 
         // 玩家資訊
-        public int BalanceBefore { get; set; }
-        public int BalanceAfter { get; set; }
+        public long BalanceBefore { get; set; }
+        public long BalanceAfter { get; set; }
 
         // 中獎資訊
         public string RewardName { get; set; }

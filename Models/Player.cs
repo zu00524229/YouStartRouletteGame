@@ -11,7 +11,7 @@ namespace YSPFrom.Models
     {
         public string UserId { get; set; }      // 帳號
         public string Passworld { get; set; }   // 密碼
-        public int Balance { get; set; }    // 餘額
+        public long Balance { get; set; }    // 餘額
         public string ConnectionId { get; set; }    // 當前連線ID (登入後綁定)
         //public bool IsAuto { get; set; }    // 是否為自動狀態
         // 新增：紀錄本回合下注（key=區域名, value=金額）
