@@ -94,6 +94,7 @@
     <Compile Include="Engine\Outcome\Outcome_JackpotLimiter.cs" />
     <Compile Include="Engine\Outcome\Outcome_PoolBias.cs" />
     <Compile Include="Engine\Outcome\Outtcome_WeightCalculator.cs" />
+    <Compile Include="Hubs\BetHub\BetManager.cs" />
     <Compile Include="Hubs\HeartbeatManager.cs" />
     <Compile Include="Hubs\PlayerHub\ClearConnection.cs" />
     <Compile Include="Models\BetData.cs" />

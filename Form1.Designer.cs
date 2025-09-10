@@ -222,7 +222,7 @@ namespace YSPFrom
             this.logPlayerBalance.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.logPlayerBalance.Size = new System.Drawing.Size(643, 173);
             this.logPlayerBalance.TabIndex = 0;
-            this.logPlayerBalance.TextChanged += new System.EventHandler(this.logTextBox_Base_TextChanged);
+            this.logPlayerBalance.TextChanged += new System.EventHandler(this.LogTextBox_Base_TextChanged);
             // 
             // logPlayereffort
             // 
@@ -306,7 +306,7 @@ namespace YSPFrom
             this.btnClear.TabIndex = 3;
             this.btnClear.Text = "取消";
             this.btnClear.UseVisualStyleBackColor = true;
-            this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
+            this.btnClear.Click += new System.EventHandler(this.BtnClear_Click);
             // 
             // txtSearch
             // 

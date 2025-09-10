@@ -165,7 +165,7 @@ namespace YSPFrom
             }
         }
 
-        private void btnClear_Click(object sender, EventArgs e)  // 取消搜尋按鈕點擊事件
+        private void BtnClear_Click(object sender, EventArgs e)  // 取消搜尋按鈕點擊事件
         {
             txtSearch.Text = "";  // 清空搜尋框
             logSearch.Clear();  // 清空搜尋結果顯示框
@@ -206,7 +206,7 @@ namespace YSPFrom
             }
         }
 
-        private void logTextBox_Base_TextChanged(object sender, EventArgs e)
+        private void LogTextBox_Base_TextChanged(object sender, EventArgs e)
         {
             // 可留空或移除
         }
@@ -244,17 +244,17 @@ namespace YSPFrom
             #endregion
         }
 
-        private void textBox1_TextChanged(object sender, EventArgs e)
+        private void TextBox1_TextChanged(object sender, EventArgs e)
         {
 
         }
 
-        private void splitContainer4_Panel2_Paint(object sender, PaintEventArgs e)
+        private void SplitContainer4_Panel2_Paint(object sender, PaintEventArgs e)
         {
 
         }
 
-        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        private void DataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
 
         }

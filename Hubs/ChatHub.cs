@@ -13,6 +13,7 @@ using YSPFrom.Core.SuperJackpot;
 using YSPFrom.Hubs;
 using YSPFrom.Models;
 using static YSPFrom.Core.Logging.LogManager;
+using YSPFrom.Hubs.BetHub;
 
 namespace YSPFrom
 {
@@ -84,9 +85,6 @@ namespace YSPFrom
 
             // 找玩家用 ConnectionId 比較安全)
             string roundId = Core.Utils.RoundIdGenerator.NextIdString();
-
-            //var player = playersDb.Values.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
-            //Player player = playersDb.Values.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
             var player = PlayerManager.GetByConnectionId(Context.ConnectionId);
 
 
@@ -101,80 +99,18 @@ namespace YSPFrom
             }
             Console.WriteLine($"[StartLottery] round={roundId}, player={player.UserId}, totalBet={data.totalBet}, balanceBefore={player.Balance}");
 
-            // === 0) 基本防呆：檢查 data 是否有效(防止 Heisenbug 時序敏感) ===
-            if (data == null || data.totalBet <= 0)
-            {
-                Clients.Caller.lotteryResult(new LotteryResponse
-                {
-                    message = "下注金額錯誤",
-                    balanceBefore = player?.Balance ?? 0,
-                    balanceAfter = player?.Balance ?? 0,
-                    totalBet = data?.totalBet ?? 0
-                });
 
-                Console.WriteLine($"[StartLottery] round={roundId}, totalBet 無效={data?.totalBet}");
+            var (response, result) = BetManager.StartLottery(player, data, roundId);
+
+            if (result == null) // 如果 result == null，代表下注失敗（超過上限 / 餘額不足 / 未登入 ...）
+            {
+                Clients.Caller.lotteryResult(response); // 直接回傳錯誤給前端，不要繼續走轉盤動畫
                 return;
             }
 
-            // 檢查餘額是否足夠
-            if (player.Balance < data.totalBet)
-            {
-                Clients.Caller.lotteryResult(new LotteryResponse
-                {
-                    insufficientBalance = true,
-                    balanceBefore = player.Balance,
-                    balanceAfter = player.Balance,
-                    totalBet = data.totalBet,
-                    message = "餘額不足"
-                });
-                return;
-            }
-
-
-            // ================= 進入金流關鍵路徑 ================
-            // 扣除下注金額
-            var before = player.Balance;        // 抽獎前餘額
-            LotteryLog(LotteryLogType.BalanceBeforeBet, player.UserId, player.Balance, data.totalBet);
-
-            // ) 扣款（唯一扣點）F
-            player.Balance -= data.totalBet;    // 扣住
-            //var afterDebit = player.Balance;    // 扣住後餘額( 還未派彩 )
-            LotteryLog(LotteryLogType.BalanceAfterBet, player.Balance);     // 統一管理log 
-
-            // ) 記錄下注資料（確保不會是上局殘留）
-            LogManager.LotteryLog(LogManager.LotteryLogType.BetDataReceived, data.totalBet, data.isAutoMode);       // 統一管理 Log
-            LogManager.LotteryLog(LogManager.LotteryLogType.BetAreaReceived, data.betAmounts);
-
-            // 7) 開獎（務必確定不改 player.Balance）
-            var result = LotteryService.CalculateLotteryResult(player, data);
-
-            // 派彩加回餘額( 使用 LotteryResponse)
-            player.Balance += result.payout;
-            var afterCredit = player.Balance;  // 派彩後餘額( 最終 )
-            //LotteryLog(LotteryLogType.BalanceAfterPayout, result.payout, afterCredit);  // 統一管理log 
-
-            // 9) 應得關係式（防呆核對，若不相等就寫 Log 便於抓 bug）
-            long expectedAfter = before - data.totalBet + result.payout;
-            if (afterCredit != expectedAfter)
-            {
-
-                // 可視需要在此強制修正：
-                player.Balance = expectedAfter;
-                afterCredit = expectedAfter;
-            }
-            LotteryLog(LotteryLogType.BalanceAfterPayout, result.payout, player.Balance); // 統一管理log 
-
-            // 回傳完整封包
-            var response = new LotteryResponse
-            {
-                //result = result,            // 抽獎結果資料
-                roundId = roundId,
-                balanceBefore = before,     // 抽獎前餘額
-                balanceAfter = afterCredit, // 最終餘額
-                totalBet = data.totalBet,   // 餘額充足, 成功扣款開獎
-                message = "OK",             // 成功訊息
-                // netChange 會自動算，不用另外賦值
-            };
+            #region //// 邏輯移到BetManager 管理
+            
+            #endregion
 
             // === RoundSummary（每局必記）===
             LotteryLog(LotteryLogType.RoundSummary,
@@ -206,32 +142,29 @@ namespace YSPFrom
             var player = PlayerManager.GetByConnectionId(Context.ConnectionId);
             if (player == null) return;
 
-            // 餘額檢查
-            if (player.Balance >= amount)
+            var (balance, betAmounts, message) = BetManager.PlaceBet(player, areaName, amount);
+
+            if (!string.IsNullOrEmpty(message))
             {
-                player.Balance -= amount;
-
-                if (!player.CurrentRoundBets.ContainsKey(areaName))
-                    player.CurrentRoundBets[areaName] = 0;
-
-                player.CurrentRoundBets[areaName] += amount;
-
-                // ✅ 傳回餘額與下注紀錄
+                // 如果餘額不足 / 超過上限
                 Clients.Caller.broadcastMessage("LotteryBalanceUpdate", new
                 {
-                    balance = player.Balance,
-                    betAmounts = player.CurrentRoundBets
+                    balance,
+                    betAmounts,
+                    message
                 });
+                return; // return 不要往下走
             }
-            else
+
+            // ✅ 成功下注
+            Clients.Caller.broadcastMessage("LotteryBalanceUpdate", new
             {
-                Clients.Caller.broadcastMessage("LotteryBalanceUpdate", new
-                {
-                    balance = player.Balance,
-                    betAmounts = player.CurrentRoundBets,
-                    message = "餘額不足"
-                });
-            }
+                balance,
+                betAmounts,
+            });
+
+            //// 餘額檢查 邏輯移到BetManager 管理
+
         }
         #endregion
 
