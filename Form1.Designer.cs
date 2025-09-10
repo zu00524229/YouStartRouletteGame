@@ -53,13 +53,13 @@ namespace YSPFrom
         private void InitializeComponent()
         {
             this.TabControl = new System.Windows.Forms.TabControl();
-            this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.玩家資訊 = new System.Windows.Forms.TabPage();
             this.splitContainer7 = new System.Windows.Forms.SplitContainer();
             this.logPlayerBox = new System.Windows.Forms.TextBox();
             this.splitContainer8 = new System.Windows.Forms.SplitContainer();
             this.logPlayerBalance = new System.Windows.Forms.TextBox();
             this.logPlayereffort = new System.Windows.Forms.TextBox();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.下注紀錄 = new System.Windows.Forms.TabPage();
             this.splitContainer9 = new System.Windows.Forms.SplitContainer();
             this.logTextBox_Bet = new System.Windows.Forms.TextBox();
             this.panelSearchBar = new System.Windows.Forms.Panel();
@@ -67,17 +67,17 @@ namespace YSPFrom
             this.btnClear = new System.Windows.Forms.Button();
             this.txtSearch = new System.Windows.Forms.TextBox();
             this.logSearch = new System.Windows.Forms.TextBox();
-            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.中獎紀錄 = new System.Windows.Forms.TabPage();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.logTextBox2_Result = new System.Windows.Forms.TextBox();
             this.splitContainer3 = new System.Windows.Forms.SplitContainer();
             this.logTextBox_Result = new System.Windows.Forms.TextBox();
             this.logTextBox_Jackpot = new System.Windows.Forms.TextBox();
-            this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.RTP狀態 = new System.Windows.Forms.TabPage();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.logTextBox_RTP = new System.Windows.Forms.TextBox();
             this.logTextBox_Base_Right = new System.Windows.Forms.TextBox();
-            this.tabPage5 = new System.Windows.Forms.TabPage();
+            this.金流紀錄 = new System.Windows.Forms.TabPage();
             this.splitContainer4 = new System.Windows.Forms.SplitContainer();
             this.splitContainer6 = new System.Windows.Forms.SplitContainer();
             this.txtBalanceLeft = new System.Windows.Forms.TextBox();
@@ -85,8 +85,12 @@ namespace YSPFrom
             this.splitContainer5 = new System.Windows.Forms.SplitContainer();
             this.txtRoundSummary = new System.Windows.Forms.TextBox();
             this.txtOtherInfo = new System.Windows.Forms.TextBox();
+            this.連線檢測 = new System.Windows.Forms.TabPage();
+            this.logPingBox = new System.Windows.Forms.TextBox();
+            this.splitContainer10 = new System.Windows.Forms.SplitContainer();
+            this.logState = new System.Windows.Forms.TextBox();
             this.TabControl.SuspendLayout();
-            this.tabPage1.SuspendLayout();
+            this.玩家資訊.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer7)).BeginInit();
             this.splitContainer7.Panel1.SuspendLayout();
             this.splitContainer7.Panel2.SuspendLayout();
@@ -95,13 +99,13 @@ namespace YSPFrom
             this.splitContainer8.Panel1.SuspendLayout();
             this.splitContainer8.Panel2.SuspendLayout();
             this.splitContainer8.SuspendLayout();
-            this.tabPage2.SuspendLayout();
+            this.下注紀錄.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer9)).BeginInit();
             this.splitContainer9.Panel1.SuspendLayout();
             this.splitContainer9.Panel2.SuspendLayout();
             this.splitContainer9.SuspendLayout();
             this.panelSearchBar.SuspendLayout();
-            this.tabPage3.SuspendLayout();
+            this.中獎紀錄.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).BeginInit();
             this.splitContainer2.Panel1.SuspendLayout();
             this.splitContainer2.Panel2.SuspendLayout();
@@ -110,12 +114,12 @@ namespace YSPFrom
             this.splitContainer3.Panel1.SuspendLayout();
             this.splitContainer3.Panel2.SuspendLayout();
             this.splitContainer3.SuspendLayout();
-            this.tabPage4.SuspendLayout();
+            this.RTP狀態.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
-            this.tabPage5.SuspendLayout();
+            this.金流紀錄.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer4)).BeginInit();
             this.splitContainer4.Panel1.SuspendLayout();
             this.splitContainer4.Panel2.SuspendLayout();
@@ -128,15 +132,21 @@ namespace YSPFrom
             this.splitContainer5.Panel1.SuspendLayout();
             this.splitContainer5.Panel2.SuspendLayout();
             this.splitContainer5.SuspendLayout();
+            this.連線檢測.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer10)).BeginInit();
+            this.splitContainer10.Panel1.SuspendLayout();
+            this.splitContainer10.Panel2.SuspendLayout();
+            this.splitContainer10.SuspendLayout();
             this.SuspendLayout();
             // 
             // TabControl
             // 
-            this.TabControl.Controls.Add(this.tabPage1);
-            this.TabControl.Controls.Add(this.tabPage2);
-            this.TabControl.Controls.Add(this.tabPage3);
-            this.TabControl.Controls.Add(this.tabPage4);
-            this.TabControl.Controls.Add(this.tabPage5);
+            this.TabControl.Controls.Add(this.玩家資訊);
+            this.TabControl.Controls.Add(this.下注紀錄);
+            this.TabControl.Controls.Add(this.中獎紀錄);
+            this.TabControl.Controls.Add(this.RTP狀態);
+            this.TabControl.Controls.Add(this.金流紀錄);
+            this.TabControl.Controls.Add(this.連線檢測);
             this.TabControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.TabControl.Font = new System.Drawing.Font("新細明體", 10F);
             this.TabControl.Location = new System.Drawing.Point(0, 0);
@@ -145,16 +155,16 @@ namespace YSPFrom
             this.TabControl.Size = new System.Drawing.Size(983, 450);
             this.TabControl.TabIndex = 0;
             // 
-            // tabPage1
+            // 玩家資訊
             // 
-            this.tabPage1.Controls.Add(this.splitContainer7);
-            this.tabPage1.Location = new System.Drawing.Point(4, 23);
-            this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(975, 423);
-            this.tabPage1.TabIndex = 0;
-            this.tabPage1.Text = "玩家資訊";
-            this.tabPage1.UseVisualStyleBackColor = true;
+            this.玩家資訊.Controls.Add(this.splitContainer7);
+            this.玩家資訊.Location = new System.Drawing.Point(4, 23);
+            this.玩家資訊.Name = "玩家資訊";
+            this.玩家資訊.Padding = new System.Windows.Forms.Padding(3);
+            this.玩家資訊.Size = new System.Drawing.Size(975, 423);
+            this.玩家資訊.TabIndex = 0;
+            this.玩家資訊.Text = "玩家資訊";
+            this.玩家資訊.UseVisualStyleBackColor = true;
             // 
             // splitContainer7
             // 
@@ -225,16 +235,16 @@ namespace YSPFrom
             this.logPlayereffort.Size = new System.Drawing.Size(643, 240);
             this.logPlayereffort.TabIndex = 1;
             // 
-            // tabPage2
+            // 下注紀錄
             // 
-            this.tabPage2.Controls.Add(this.splitContainer9);
-            this.tabPage2.Location = new System.Drawing.Point(4, 23);
-            this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(975, 423);
-            this.tabPage2.TabIndex = 1;
-            this.tabPage2.Text = "下注紀錄";
-            this.tabPage2.UseVisualStyleBackColor = true;
+            this.下注紀錄.Controls.Add(this.splitContainer9);
+            this.下注紀錄.Location = new System.Drawing.Point(4, 23);
+            this.下注紀錄.Name = "下注紀錄";
+            this.下注紀錄.Padding = new System.Windows.Forms.Padding(3);
+            this.下注紀錄.Size = new System.Drawing.Size(975, 423);
+            this.下注紀錄.TabIndex = 1;
+            this.下注紀錄.Text = "下注紀錄";
+            this.下注紀錄.UseVisualStyleBackColor = true;
             // 
             // splitContainer9
             // 
@@ -285,7 +295,7 @@ namespace YSPFrom
             this.btnSearch.TabIndex = 2;
             this.btnSearch.Text = "搜尋";
             this.btnSearch.UseVisualStyleBackColor = true;
-            this.btnSearch.Click += new System.EventHandler(this.btnSearch_Click);
+            this.btnSearch.Click += new System.EventHandler(this.BtnSearch_Click);
             // 
             // btnClear
             // 
@@ -321,15 +331,15 @@ namespace YSPFrom
             this.logSearch.Size = new System.Drawing.Size(459, 417);
             this.logSearch.TabIndex = 1;
             // 
-            // tabPage3
+            // 中獎紀錄
             // 
-            this.tabPage3.Controls.Add(this.splitContainer2);
-            this.tabPage3.Location = new System.Drawing.Point(4, 23);
-            this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(975, 423);
-            this.tabPage3.TabIndex = 2;
-            this.tabPage3.Text = "中獎紀錄";
-            this.tabPage3.UseVisualStyleBackColor = true;
+            this.中獎紀錄.Controls.Add(this.splitContainer2);
+            this.中獎紀錄.Location = new System.Drawing.Point(4, 23);
+            this.中獎紀錄.Name = "中獎紀錄";
+            this.中獎紀錄.Size = new System.Drawing.Size(975, 423);
+            this.中獎紀錄.TabIndex = 2;
+            this.中獎紀錄.Text = "中獎紀錄";
+            this.中獎紀錄.UseVisualStyleBackColor = true;
             // 
             // splitContainer2
             // 
@@ -402,15 +412,15 @@ namespace YSPFrom
             this.logTextBox_Jackpot.Size = new System.Drawing.Size(497, 214);
             this.logTextBox_Jackpot.TabIndex = 1;
             // 
-            // tabPage4
+            // RTP狀態
             // 
-            this.tabPage4.Controls.Add(this.splitContainer1);
-            this.tabPage4.Location = new System.Drawing.Point(4, 23);
-            this.tabPage4.Name = "tabPage4";
-            this.tabPage4.Size = new System.Drawing.Size(975, 423);
-            this.tabPage4.TabIndex = 3;
-            this.tabPage4.Text = "RTP狀態";
-            this.tabPage4.UseVisualStyleBackColor = true;
+            this.RTP狀態.Controls.Add(this.splitContainer1);
+            this.RTP狀態.Location = new System.Drawing.Point(4, 23);
+            this.RTP狀態.Name = "RTP狀態";
+            this.RTP狀態.Size = new System.Drawing.Size(975, 423);
+            this.RTP狀態.TabIndex = 3;
+            this.RTP狀態.Text = "RTP狀態";
+            this.RTP狀態.UseVisualStyleBackColor = true;
             // 
             // splitContainer1
             // 
@@ -453,16 +463,16 @@ namespace YSPFrom
             this.logTextBox_Base_Right.Size = new System.Drawing.Size(505, 423);
             this.logTextBox_Base_Right.TabIndex = 0;
             // 
-            // tabPage5
+            // 金流紀錄
             // 
-            this.tabPage5.Controls.Add(this.splitContainer4);
-            this.tabPage5.Font = new System.Drawing.Font("新細明體", 12F);
-            this.tabPage5.Location = new System.Drawing.Point(4, 23);
-            this.tabPage5.Name = "tabPage5";
-            this.tabPage5.Size = new System.Drawing.Size(975, 423);
-            this.tabPage5.TabIndex = 4;
-            this.tabPage5.Text = "金流紀錄";
-            this.tabPage5.UseVisualStyleBackColor = true;
+            this.金流紀錄.Controls.Add(this.splitContainer4);
+            this.金流紀錄.Font = new System.Drawing.Font("新細明體", 12F);
+            this.金流紀錄.Location = new System.Drawing.Point(4, 23);
+            this.金流紀錄.Name = "金流紀錄";
+            this.金流紀錄.Size = new System.Drawing.Size(975, 423);
+            this.金流紀錄.TabIndex = 4;
+            this.金流紀錄.Text = "金流紀錄";
+            this.金流紀錄.UseVisualStyleBackColor = true;
             // 
             // splitContainer4
             // 
@@ -565,6 +575,57 @@ namespace YSPFrom
             this.txtOtherInfo.Size = new System.Drawing.Size(975, 149);
             this.txtOtherInfo.TabIndex = 1;
             // 
+            // 連線檢測
+            // 
+            this.連線檢測.Controls.Add(this.splitContainer10);
+            this.連線檢測.Location = new System.Drawing.Point(4, 23);
+            this.連線檢測.Name = "連線檢測";
+            this.連線檢測.Size = new System.Drawing.Size(975, 423);
+            this.連線檢測.TabIndex = 5;
+            this.連線檢測.Text = "連線檢測";
+            this.連線檢測.UseVisualStyleBackColor = true;
+            // 
+            // logPingBox
+            // 
+            this.logPingBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.logPingBox.Font = new System.Drawing.Font("新細明體", 10F);
+            this.logPingBox.Location = new System.Drawing.Point(0, 0);
+            this.logPingBox.Multiline = true;
+            this.logPingBox.Name = "logPingBox";
+            this.logPingBox.ReadOnly = true;
+            this.logPingBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.logPingBox.Size = new System.Drawing.Size(486, 423);
+            this.logPingBox.TabIndex = 1;
+            // 
+            // splitContainer10
+            // 
+            this.splitContainer10.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer10.Location = new System.Drawing.Point(0, 0);
+            this.splitContainer10.Name = "splitContainer10";
+            // 
+            // splitContainer10.Panel1
+            // 
+            this.splitContainer10.Panel1.Controls.Add(this.logState);
+            // 
+            // splitContainer10.Panel2
+            // 
+            this.splitContainer10.Panel2.Controls.Add(this.logPingBox);
+            this.splitContainer10.Size = new System.Drawing.Size(975, 423);
+            this.splitContainer10.SplitterDistance = 485;
+            this.splitContainer10.TabIndex = 2;
+            // 
+            // logState
+            // 
+            this.logState.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.logState.Font = new System.Drawing.Font("新細明體", 11F);
+            this.logState.Location = new System.Drawing.Point(0, 0);
+            this.logState.Multiline = true;
+            this.logState.Name = "logState";
+            this.logState.ReadOnly = true;
+            this.logState.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.logState.Size = new System.Drawing.Size(485, 423);
+            this.logState.TabIndex = 1;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -575,7 +636,7 @@ namespace YSPFrom
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.TabControl.ResumeLayout(false);
-            this.tabPage1.ResumeLayout(false);
+            this.玩家資訊.ResumeLayout(false);
             this.splitContainer7.Panel1.ResumeLayout(false);
             this.splitContainer7.Panel1.PerformLayout();
             this.splitContainer7.Panel2.ResumeLayout(false);
@@ -587,7 +648,7 @@ namespace YSPFrom
             this.splitContainer8.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer8)).EndInit();
             this.splitContainer8.ResumeLayout(false);
-            this.tabPage2.ResumeLayout(false);
+            this.下注紀錄.ResumeLayout(false);
             this.splitContainer9.Panel1.ResumeLayout(false);
             this.splitContainer9.Panel1.PerformLayout();
             this.splitContainer9.Panel2.ResumeLayout(false);
@@ -596,7 +657,7 @@ namespace YSPFrom
             this.splitContainer9.ResumeLayout(false);
             this.panelSearchBar.ResumeLayout(false);
             this.panelSearchBar.PerformLayout();
-            this.tabPage3.ResumeLayout(false);
+            this.中獎紀錄.ResumeLayout(false);
             this.splitContainer2.Panel1.ResumeLayout(false);
             this.splitContainer2.Panel1.PerformLayout();
             this.splitContainer2.Panel2.ResumeLayout(false);
@@ -608,14 +669,14 @@ namespace YSPFrom
             this.splitContainer3.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer3)).EndInit();
             this.splitContainer3.ResumeLayout(false);
-            this.tabPage4.ResumeLayout(false);
+            this.RTP狀態.ResumeLayout(false);
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel1.PerformLayout();
             this.splitContainer1.Panel2.ResumeLayout(false);
             this.splitContainer1.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
-            this.tabPage5.ResumeLayout(false);
+            this.金流紀錄.ResumeLayout(false);
             this.splitContainer4.Panel1.ResumeLayout(false);
             this.splitContainer4.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer4)).EndInit();
@@ -632,6 +693,13 @@ namespace YSPFrom
             this.splitContainer5.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer5)).EndInit();
             this.splitContainer5.ResumeLayout(false);
+            this.連線檢測.ResumeLayout(false);
+            this.splitContainer10.Panel1.ResumeLayout(false);
+            this.splitContainer10.Panel1.PerformLayout();
+            this.splitContainer10.Panel2.ResumeLayout(false);
+            this.splitContainer10.Panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer10)).EndInit();
+            this.splitContainer10.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -639,20 +707,20 @@ namespace YSPFrom
         #endregion
 
         private System.Windows.Forms.TabControl TabControl;
-        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage 玩家資訊;
         private System.Windows.Forms.TextBox logPlayerBalance;
-        private System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.TabPage tabPage3;
+        private System.Windows.Forms.TabPage 下注紀錄;
+        private System.Windows.Forms.TabPage 中獎紀錄;
         private System.Windows.Forms.TextBox logTextBox_Bet;
         private System.Windows.Forms.TextBox logTextBox_Result;
-        private System.Windows.Forms.TabPage tabPage4;
+        private System.Windows.Forms.TabPage RTP狀態;
         private System.Windows.Forms.TextBox logTextBox_RTP;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.TextBox logTextBox_Base_Right;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.TextBox logTextBox2_Result;
         private System.Windows.Forms.SplitContainer splitContainer3;
-        private System.Windows.Forms.TabPage tabPage5;
+        private System.Windows.Forms.TabPage 金流紀錄;
         private System.Windows.Forms.SplitContainer splitContainer4;
         private System.Windows.Forms.SplitContainer splitContainer6;
         private System.Windows.Forms.TextBox txtBalanceLeft;
@@ -671,6 +739,10 @@ namespace YSPFrom
         private System.Windows.Forms.TextBox logSearch;
         private System.Windows.Forms.Panel panelSearchBar;
         private System.Windows.Forms.TextBox logTextBox_Jackpot;
+        private System.Windows.Forms.TabPage 連線檢測;
+        private System.Windows.Forms.TextBox logPingBox;
+        private System.Windows.Forms.SplitContainer splitContainer10;
+        private System.Windows.Forms.TextBox logState;
     }
 }
 

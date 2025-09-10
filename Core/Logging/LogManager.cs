@@ -47,7 +47,6 @@ namespace YSPFrom.Core.Logging
         public enum LotteryLogType
         {
             // ChatHub
-            PlayerLogoutBalance,
             ClientConnected,    // 前端連線
             ClientDisconnected, // 前端斷線
             BetDataReceived,    // 收到下注資料
@@ -94,22 +93,12 @@ namespace YSPFrom.Core.Logging
             {
                 #region ChatHub Log
 
-                case LotteryLogType.PlayerLogoutBalance:
-                    {
-                        string userId = (string)args[0];
-                        long balance = (int)args[1];
-
-                        string msg = $"❌ 玩家登出：[ {userId} ] 登出時餘額={balance}";
-                        Console.WriteLine(msg);
-                        Program.MainForm?.LogPlayerRoundBalance(msg); // 玩家分頁
-                        Program.MainForm?.LogPlayerStatus(msg);       // 狀態分頁
-                    }
-                    break;
-
                 case LotteryLogType.ClientConnected:
                     {
                         string userId = (string)args[0];
-                        string msg = $"✅ 玩家登入成功：{userId}";
+                        long balance = GetLong(args, 1);
+
+                        string msg = $"✅ 玩家登入成功：{userId}, 餘額={balance}";
                         Console.WriteLine(msg);
                         Program.MainForm?.LogPlayerStatus(msg);
                     }
@@ -118,9 +107,12 @@ namespace YSPFrom.Core.Logging
                 case LotteryLogType.ClientDisconnected:
                     {
                         string userId = (string)args[0];
-                        string msg = $"❌ 玩家已斷線：{userId}";
+                        long balance = GetLong(args, 1);
+
+                        string msg = $"❌ 玩家斷線/登出：{userId}, 餘額={balance}";
                         Console.WriteLine(msg);
                         Program.MainForm?.LogPlayerStatus(msg);
+                        Program.MainForm?.LogPlayerRoundBalance(msg);
                     }
                     break;
                 #endregion
@@ -131,7 +123,7 @@ namespace YSPFrom.Core.Logging
                         long roundId = _currentRoundId;
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-                        long totalBet = Convert.ToInt32(args[0]);
+                        long totalBet = GetLong(args, 0);
                         bool isAutoMode = Convert.ToBoolean(args[1]);
 
                         string msg = $"[{userId}][局號={roundId}] 總下注={totalBet}, Auto={isAutoMode}";
@@ -172,7 +164,7 @@ namespace YSPFrom.Core.Logging
 
                         string rewardName = (string)args[0];
                         int finalMultiplier = (int)args[1];
-                        long winAmount = (int)args[2];
+                        long winAmount = GetLong(args, 2);
                         double currentRTP = (float)args[3];
 
                         if (winAmount > 0)
@@ -318,7 +310,7 @@ namespace YSPFrom.Core.Logging
                 case LotteryLogType.JackpotPoolInsufficient:
                     {
                         string rewardName = (string)args[0];
-                        long needPool = Convert.ToInt64(args[1]);
+                        long needPool = GetLong(args, 1);
                         long poolBalance = (long)args[2];
 
                         string msg = $"❌ 獎池不足 → 移除 {rewardName} | 需求={needPool:0}, 現有={poolBalance:0}";
@@ -416,7 +408,7 @@ namespace YSPFrom.Core.Logging
                         long roundId = _currentRoundId;
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-                        long balanceAfterBet = Convert.ToInt32(args[0]);
+                        long balanceAfterBet = GetLong(args, 0);
 
                         string msg = $"[{userId}][局號={roundId}] 扣注後餘額={balanceAfterBet}";
                         Program.MainForm?.LogBalanceLeft(msg);  // ① 玩家餘額變化
@@ -430,8 +422,8 @@ namespace YSPFrom.Core.Logging
                         long roundId = _currentRoundId;
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
-                        long payout = Convert.ToInt64(args[0]);
-                        long balanceAfterPayout = Convert.ToInt32(args[1]);
+                        long payout = GetLong(args, 0);
+                        long balanceAfterPayout = GetLong(args, 1);
 
                         string msg = $"[{userId}][局號={roundId}] 派彩={payout}, 結算後餘額={balanceAfterPayout}";
                         Console.WriteLine(msg);
@@ -447,9 +439,9 @@ namespace YSPFrom.Core.Logging
                         string userId = _roundUserMap.ContainsKey(roundId) ? _roundUserMap[roundId] : "UNKNOWN";
 
                         string rewardName = Convert.ToString(args[0]);
-                        long betAmount = Convert.ToInt32(args[1]);
-                        long multiplier = Convert.ToInt32(args[2]);
-                        long netChange = Convert.ToInt32(args[3]);
+                        long betAmount = GetLong(args, 1);
+                        long multiplier = GetLong(args, 2);
+                        long netChange = GetLong(args, 3);
 
                         string msg = $"[{userId}][局號={roundId}] 下注={betAmount}, 獎項={rewardName}, 倍率={multiplier}, 淨變化={(netChange >= 0 ? "+" : "")}{netChange}";
                         Console.WriteLine(msg);

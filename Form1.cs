@@ -42,10 +42,11 @@ namespace YSPFrom
         {
             AppendTextSafe(logPlayereffort, message);
         }
+
         #endregion
 
         #region 金流紀錄
-       
+
         public void LogBalanceLeft(string msg) // 上半部左：抽獎前 & 扣注後
         {
             AppendTextSafe(txtBalanceLeft, msg);
@@ -132,7 +133,7 @@ namespace YSPFrom
         private bool isSearching = false;  // 是否正在搜尋
         private string currentSearchKeyword = "";  // 當前搜尋的關鍵字
 
-        private void btnSearch_Click(object sender, EventArgs e)    // 搜尋按鈕點擊事件
+        private void BtnSearch_Click(object sender, EventArgs e)    // 搜尋按鈕點擊事件
         {
             string keyword = txtSearch.Text.Trim();  // 取得搜尋的關鍵字
             if (string.IsNullOrEmpty(keyword))
@@ -175,6 +176,19 @@ namespace YSPFrom
             currentSearchKeyword = "";
         }
         #endregion
+        #endregion
+
+        #region 連線檢測
+
+        public void LogConnectionState(string msg)  // 其他連線狀態 (左)
+        {
+            AppendTextSafe(logState, msg);
+        }
+
+        public void LogConnectionCheck(string msg)  // 心跳顯示(右)
+        {
+            AppendTextSafe(logPingBox, msg);
+        }
         #endregion
 
         private void AppendTextSafe(TextBox box, string message)

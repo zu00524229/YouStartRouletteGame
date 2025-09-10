@@ -2,11 +2,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Runtime.Remoting.Contexts;
 using System.Text;
+using YSPFrom.Hubs.PlayerHub;
 using System.Threading.Tasks;
 using YSPFrom.Core.Logging;
 using YSPFrom.Core.RTP;
 using YSPFrom.Core.SuperJackpot;
+using YSPFrom.Hubs;
 using YSPFrom.Models;
 using static YSPFrom.Core.Logging.LogManager;
 
@@ -14,158 +18,77 @@ namespace YSPFrom
 {
     public class ChatHub : Hub
     {
-        public void Send(string user, string message)   // 這是給 client 呼叫的
-        {
-            // 廣播訊息給所有 client
-            Clients.All.broadcastMessage(user, message);
-        }
+        //public void Send(string user, string message)   // 這是給 client 呼叫的
+        //{
+        //    // 廣播訊息給所有 client
+        //    Clients.All.broadcastMessage(user, message);
+        //}
 
+        // =========================== Hub =====================================
         public override Task OnConnected()
         {
-            Console.WriteLine("Hub 名稱: " + this.Context.ConnectionId);
-            Console.WriteLine("Hub 類型: " + this.GetType().Name);
-
-            // 這裡只記錄 ConnId，不要傳 userId
-            string msg = $"⚡ 有新連線進來 ConnId={Context.ConnectionId}";
+            string msg = $"⚡有新連線進來 ConnId={Context.ConnectionId}";
             Console.WriteLine(msg);
-            Program.MainForm?.LogPlayerStatus(msg);
-
+            Program.MainForm?.LogConnectionCheck(msg);
             return base.OnConnected();
         }
 
-        // ✅ 當玩家斷線，自動清除 ConnectionId
+        #region 玩家斷線時自動清除 ConnectionId
         public override Task OnDisconnected(bool stopCalled)
         {
             var connId = Context.ConnectionId;
 
             // 找出斷線的玩家
-            var player = playersDb.Values.FirstOrDefault(p => p.ConnectionId == connId);
+            var player = PlayerManager.GetByConnectionId(connId);
             if (player != null)
             {
-                Console.WriteLine($"玩家 {player.UserId} 已斷線，清除連線ID (ConnId={connId})");
-                LogManager.LotteryLog(LogManager.LotteryLogType.ClientDisconnected, player.UserId);
-                LogManager.LotteryLog(LogManager.LotteryLogType.PlayerLogoutBalance, player.UserId, player.Balance);
-
-                player.ConnectionId = null; // 清掉斷線
-
-                Clients.Client(connId).broadcastMessage("Disconnected", new
-                {
-                    message = "連線已中斷,請重新登入",
-                    userId = player.UserId
-                });
-                // 你想通知其他人（例如同桌玩家），用 Clients.All / Clients.Others
-                // Clients.All.broadcastMessage("PlayerDisconnected", new { userId = player.UserId });
+                //ClearConnection(player, "斷線");
+                ClearConnection.Clear(player, "正常斷線");    // 讀 ClearConnection.cs 的 Clear 方法
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ OnDisconnected：未知連線 ConnId={connId}");
             }
 
             return base.OnDisconnected(stopCalled);
         }
-
-        #region // 從 data 取得下注資料(舊StartLottery)
-        //呼叫 form?.LogBet() 方法來列印下注資料
-        //public void StartLottery(BetData data)
-        //{
-        //    //Console.WriteLine(" 收到下注資料：");
-        //    //Console.WriteLine($"自動模式: {data.isAutoMode}");
-
-        //    //var form = (Form1)System.Windows.Forms.Application.OpenForms["Form1"];
-        //    //form?.LogBet("收到下注資料：");
-        //    //form?.LogBet($"總下注: {data.totalBet}");
-        //    //form?.LogBet($"自動模式: {data.isAutoMode}");
-
-        //    //form?.LogBase("有前端連進來!");
-
-        //    //form?.LogRTP($"RTP: {LotteryService.GetCurrentRTP()}");
-
-
-        //    LogManager.LotteryLog(LogManager.LotteryLogType.BetDataReceived, data.totalBet, data.isAutoMode);       // 統一管理 Log
-        //    //var date = new YSPFrom.Core.BetData();
-        //    foreach (var entry in data.betAmounts)
-        //    {
-        //        LogManager.LotteryLog(LogManager.LotteryLogType.BetAreaReceived, entry.Key, entry.Value);       // 統一管理 Log
-        //    }
-        //    var result = LotteryService.CalculateLotteryResult(data);
-
-        //    Clients.Caller.broadcastLotteryResult(result);
-
-        //    // TODO: 你可以在這裡回傳中獎結果
-        //    //var form = (Form1)System.Windows.Forms.Application.OpenForms["Form1"];
-        //    //form?.LogResult($"🎰 中獎結果: {selectedReward} x{multiplier} → 派彩 {winAmount}");
-        //}
         #endregion
 
-
-        #region // 玩家
-
-        // 玩家資料庫（假資料）
-        private static readonly Dictionary<string, Player> playersDb = new Dictionary<string, Player>
-    {
-        { "ethan",  new Player { UserId = "ethan",  Passworld = "zxc123", Balance = 1000000 } },
-        { "ed",  new Player { UserId = "ed",  Passworld = "zxc123", Balance = 1000000 } },
-        { "book",  new Player { UserId = "book",  Passworld = "zxc123", Balance = 1000000 } },
-        { "player", new Player { UserId = "player", Passworld = "zxc123", Balance = 1000000 } },
-        { "player2", new Player { UserId = "player2", Passworld = "zxc123", Balance = 1000000 } },
-        { "player3", new Player { UserId = "player3", Passworld = "zxc123", Balance = 1000000 } },
-        { "player4", new Player { UserId = "player4", Passworld = "zxc123", Balance = 1000000 } },
-        { "player5", new Player { UserId = "player5", Passworld = "zxc123", Balance = 1000000 } },
-        { "player6", new Player { UserId = "player6", Passworld = "zxc123", Balance = 1000000 } },
-    };
-
-        // 登入並綁定 ConnectionId
+        // ====================== 玩家登入/管理 ======================
+        #region 玩家登入，檢查帳號/密碼，綁定 ConnectionId
+        private static readonly object _loginLock = new object();
         public object Login(dynamic loginData)
         {
             string username = loginData.username;
             string password = loginData.password;
 
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            var (ok, msg, player) = PlayerManager.Login(username, password, Context.ConnectionId, Clients);
+
+            if (!ok)
             {
-                return new { success = false, message = "帳號或密碼不得為空" };
+                return new { succes = false, message = msg };
             }
-
-            if (!playersDb.ContainsKey(username) || playersDb[username].Passworld != password)
-            {
-                return new { success = false, message = "帳號或密碼錯誤" };
-            }
-
-            var player = playersDb[username];
-            
-
-            // 🔑 檢查是否已經有人登入
-            if (!string.IsNullOrEmpty(player.ConnectionId))
-            {
-                // 如果你要拒絕新登入：
-                return new { success = false, message = "此帳號已在其他地方登入" };
-
-                // 如果你要踢掉舊連線（只允許新連線）：
-                // Clients.Client(player.ConnectionId).SendAsync("ForceLogout", "帳號已在別處登入");
-                // Console.WriteLine($"玩家 {username} 被新連線擠下線 (舊ConnId={player.ConnectionId}, 新ConnId={Context.ConnectionId})");
-            }
-
-            player.ConnectionId = Context.ConnectionId; // 綁定連線ID
-            Console.WriteLine($"玩家 {username} 登入成功，餘額：{player.Balance} (ConnId: {player.ConnectionId})");
 
             // 真正記錄玩家登入
-            LogManager.LotteryLog(LogManager.LotteryLogType.ClientConnected, player.UserId);
+            Console.WriteLine($"玩家 {username} 登入成功，餘額：{player.Balance} (ConnId: {player.ConnectionId})");
+            LogManager.LotteryLog(LogManager.LotteryLogType.ClientConnected, player.UserId, player.Balance);
 
-            return new
-            {
-                success = true,
-                message = "登入成功",
-                username = player.UserId,   // 帳號
-                balance = player.Balance
-            };
+            return new { success = true, message = "登入成功", username = player.UserId, balance = player.Balance };
         }
+        #endregion
 
-
-
-        // ✅ 下注流程：根據 ConnectionId 找玩家
+        // ====================== 遊戲下注流程 ======================
+        #region 下注流程：根據 ConnectionId 找玩家
         public void StartLottery(BetData data)
         {
 
             // 找玩家用 ConnectionId 比較安全)
             string roundId = Core.Utils.RoundIdGenerator.NextIdString();
 
-            var player = playersDb.Values.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
-            Console.WriteLine($"[StartLottery] round={roundId}, player={player.UserId}, totalBet={data.totalBet}, balanceBefore={player.Balance}");
+            //var player = playersDb.Values.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+            //Player player = playersDb.Values.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+            var player = PlayerManager.GetByConnectionId(Context.ConnectionId);
+
 
             if (player == null)
             {
@@ -176,8 +99,9 @@ namespace YSPFrom
                 });
                 return;
             }
+            Console.WriteLine($"[StartLottery] round={roundId}, player={player.UserId}, totalBet={data.totalBet}, balanceBefore={player.Balance}");
 
-            // === 0) 基本防呆：檢查 data 是否有效(防止 Heisenbug 程序錯誤) ===
+            // === 0) 基本防呆：檢查 data 是否有效(防止 Heisenbug 時序敏感) ===
             if (data == null || data.totalBet <= 0)
             {
                 Clients.Caller.lotteryResult(new LotteryResponse
@@ -212,9 +136,9 @@ namespace YSPFrom
             var before = player.Balance;        // 抽獎前餘額
             LotteryLog(LotteryLogType.BalanceBeforeBet, player.UserId, player.Balance, data.totalBet);
 
-            // ) 扣款（唯一扣點）
+            // ) 扣款（唯一扣點）F
             player.Balance -= data.totalBet;    // 扣住
-            var afterDebit = player.Balance;    // 扣住後餘額( 還未派彩 )
+            //var afterDebit = player.Balance;    // 扣住後餘額( 還未派彩 )
             LotteryLog(LotteryLogType.BalanceAfterBet, player.Balance);     // 統一管理log 
 
             // ) 記錄下注資料（確保不會是上局殘留）
@@ -276,6 +200,7 @@ namespace YSPFrom
         }
         #endregion
 
+        #region 單區下注(即時下注更新)
         public void PlaceBet(string areaName, int amount)
         {
             var player = PlayerManager.GetByConnectionId(Context.ConnectionId);
@@ -308,6 +233,30 @@ namespace YSPFrom
                 });
             }
         }
+        #endregion
 
+        // ====================== 心跳維護 ======================
+        #region Ping (心跳)
+        public void Ping()
+        {
+            var player = PlayerManager.GetByConnectionId(Context.ConnectionId);
+            if (player == null)
+            {
+                // 尚未登入的裸連線，直接忽略
+                string msg = $"⚠️ 收到未知連線的 Ping (ConnId={Context.ConnectionId})";
+                Console.WriteLine(msg);
+                Program.MainForm?.LogConnectionCheck(msg);
+                return;
+            }
+            // 有玩家 → 更新心跳
+            HeartbeatManager.UpdateHeartbeat(player.UserId);
+            //string okmsg = $"✅ Ping: {player.UserId}";
+            string okmsg = $"✅ Ping: 帳號={player.UserId}, 連線ID={player.ConnectionId}";
+            Console.WriteLine(okmsg);
+            Program.MainForm?.LogConnectionCheck(okmsg);  // 顯示右視窗
+
+            // 可選：Console.WriteLine($"收到 Ping: {player.UserId}");
+        }
+        #endregion
     }
 }
