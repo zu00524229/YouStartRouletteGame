@@ -485,6 +485,7 @@ namespace YSPFrom.Core.Logging
         {
             if (a == null || idx < 0 || idx >= a.Length || a[idx] == null) return def;
             try { return Convert.ToInt32(a[idx]); } catch { }
+
             int v; return int.TryParse(a[idx].ToString(), out v) ? v : def;
         }
 

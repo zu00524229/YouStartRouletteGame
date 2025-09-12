@@ -98,14 +98,20 @@ namespace YSPFrom
                 if (!string.IsNullOrEmpty(player.ConnectionId))
                 {
                     // 踢掉舊的
-                    clients.Client(player.ConnectionId).broadcastMessage("ForceLogout", "帳號已在別處登入");
+                    //clients.Client(player.ConnectionId).broadcastMessage("ForceLogout", "帳號已在別處登入");
                     //ClearConnection(player, "斷線");
+                    // 🔧 改用獨立事件名稱 forceLogout
+                    clients.Client(player.ConnectionId).forceLogout(new
+                    {
+                        message = "帳號已在別處登入"
+                    });
+
+                    // 清掉舊的連線資料
                     ClearConnection.Clear(player, "強制登出");    // 讀 ClearConnection.cs 的 Clear 方法
 
                 }
 
                 // 綁定新連線
-                //player.ConnectionId = Context.ConnectionId;
                 player.ConnectionId = connId;
                 //PlayerManager.Add(player);  // 確保這時候才加入
                 Add(player);

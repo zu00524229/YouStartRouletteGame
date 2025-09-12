@@ -1,19 +1,20 @@
 ﻿using Microsoft.AspNet.SignalR;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Runtime.Remoting.Contexts;
 using System.Text;
-using YSPFrom.Hubs.PlayerHub;
 using System.Threading.Tasks;
 using YSPFrom.Core.Logging;
 using YSPFrom.Core.RTP;
 using YSPFrom.Core.SuperJackpot;
 using YSPFrom.Hubs;
+using YSPFrom.Hubs.BetHub;
+using YSPFrom.Hubs.PlayerHub;
 using YSPFrom.Models;
 using static YSPFrom.Core.Logging.LogManager;
-using YSPFrom.Hubs.BetHub;
 
 namespace YSPFrom
 {
@@ -67,7 +68,7 @@ namespace YSPFrom
 
             if (!ok)
             {
-                return new { succes = false, message = msg };
+                return new { success = false, message = msg };
             }
 
             // 真正記錄玩家登入
@@ -82,6 +83,8 @@ namespace YSPFrom
         #region 下注流程：根據 ConnectionId 找玩家
         public void StartLottery(BetData data)
         {
+            Console.WriteLine("🎯 StartLottery 被呼叫！");
+            Program.MainForm?.LogConnectionCheck("🎯 StartLottery 被呼叫！");  // 顯示右視窗
 
             // 找玩家用 ConnectionId 比較安全)
             string roundId = Core.Utils.RoundIdGenerator.NextIdString();
@@ -99,8 +102,10 @@ namespace YSPFrom
             }
             Console.WriteLine($"[StartLottery] round={roundId}, player={player.UserId}, totalBet={data.totalBet}, balanceBefore={player.Balance}");
 
-
             var (response, result) = BetManager.StartLottery(player, data, roundId);
+            Console.WriteLine("[DEBUG] result=" + JsonConvert.SerializeObject(result));
+            Console.WriteLine("[DEBUG] response=" + JsonConvert.SerializeObject(response));
+
 
             if (result == null) // 如果 result == null，代表下注失敗（超過上限 / 餘額不足 / 未登入 ...）
             {
@@ -120,10 +125,18 @@ namespace YSPFrom
                 response.netChange);
 
             // 事件：只丟轉盤結果，給前端動畫用
-            Clients.Caller.broadcastLotteryResult(result);
+            //Clients.Caller.broadcastLotteryResult(result);
 
             // 回傳給當事人
-            Clients.Caller.lotteryResult(response);
+            //Clients.Caller.lotteryResult(response);
+            Clients.All.broadcastLotteryResult(result);
+            Clients.All.lotteryResult(response);
+            Clients.All.testEvent("hello world");
+            Console.WriteLine(">>> 廣播 broadcastLotteryResult");
+            Console.WriteLine(">>> 廣播 lotteryResult");
+            Console.WriteLine(">>> 廣播 testEvent");
+
+
 
             // === 系統資訊 ===
             LotteryLog(LotteryLogType.OtherInfo,

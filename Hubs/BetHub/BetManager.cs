@@ -90,7 +90,6 @@ namespace YSPFrom.Hubs.BetHub
             LotteryLog(LotteryLogType.BalanceAfterPayout, result.payout, player.Balance);
 
 
-
             // 回傳完整封包
             var response = new LotteryResponse
             {
@@ -109,15 +108,6 @@ namespace YSPFrom.Hubs.BetHub
                 response.totalBet,
                 result.multiplier,
                 response.netChange);
-
-            // === 系統資訊 ===
-            LotteryLog(LotteryLogType.OtherInfo,
-                "OK",  // args[0] 目前沒用，可以放 "OK"
-                RTPManager.GetCurrentRTP(),
-                RTPManager.totalBets,
-                RTPManager.totalPayouts,
-                response.balanceAfter,      // 當前玩家餘額 or 機台餘額，看你要印哪個
-                SuperJackpotPool.PoolBalance);
 
             return (response, result);      // 正確回傳Tuple
         }
